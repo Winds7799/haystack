@@ -7,8 +7,9 @@ import {
   useDerivedValue,
   useSharedValue,
   withDecay,
+  withSpring,
 } from 'react-native-reanimated';
-import type { DerivedValue } from 'react-native-reanimated';
+import type { DerivedValue, SharedValue } from 'react-native-reanimated';
 import type { Transforms3d } from '@shopify/react-native-skia';
 import { MAX_ZOOM } from './constants';
 import {
@@ -16,6 +17,7 @@ import {
   clampZoom,
   fitZoom,
   offsetBounds,
+  offsetFor,
   screenToWorld,
   type Viewport,
 } from './camera';
@@ -25,13 +27,24 @@ import type { Point } from './types';
 const TAP_TRAVEL = 8;
 const TAP_DURATION = 420;
 
+/** Settle for the win move: firm, no overshoot to speak of. */
+const FOCUS_SPRING = { damping: 22, stiffness: 130, mass: 1 } as const;
+
 export interface Camera {
   transform: DerivedValue<Transforms3d>;
   gesture: ComposedGesture;
   minZoom: number;
+  zoom: SharedValue<number>;
+  /** Frames a world point in the middle of the screen at the given zoom. */
+  focusOn: (point: Point, zoom: number, animated: boolean) => void;
 }
 
-export function useCamera(viewport: Viewport, worldSize: number, onTap: (point: Point) => void): Camera {
+export function useCamera(
+  viewport: Viewport,
+  worldSize: number,
+  onTap: (point: Point) => void,
+  interactive: boolean
+): Camera {
   const zoom = useSharedValue(1);
   const offsetX = useSharedValue(0);
   const offsetY = useSharedValue(0);
@@ -62,6 +75,7 @@ export function useCamera(viewport: Viewport, worldSize: number, onTap: (point: 
 
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
+      .enabled(interactive)
       .onStart(() => {
         cancelAnimation(offsetX);
         cancelAnimation(offsetY);
@@ -95,6 +109,7 @@ export function useCamera(viewport: Viewport, worldSize: number, onTap: (point: 
       });
 
     const pinch = Gesture.Pinch()
+      .enabled(interactive)
       .onStart((event) => {
         cancelAnimation(offsetX);
         cancelAnimation(offsetY);
@@ -127,6 +142,7 @@ export function useCamera(viewport: Viewport, worldSize: number, onTap: (point: 
       });
 
     const tap = Gesture.Tap()
+      .enabled(interactive)
       .numberOfTaps(1)
       .maxDuration(TAP_DURATION)
       .maxDistance(TAP_TRAVEL)
@@ -142,6 +158,7 @@ export function useCamera(viewport: Viewport, worldSize: number, onTap: (point: 
     return Gesture.Race(tap, Gesture.Simultaneous(pan, pinch));
   }, [
     handleTap,
+    interactive,
     width,
     height,
     worldSize,
@@ -162,5 +179,29 @@ export function useCamera(viewport: Viewport, worldSize: number, onTap: (point: 
     { scale: zoom.value },
   ]);
 
-  return { transform, gesture, minZoom };
+  const focusOn = useCallback(
+    (point: Point, target: number, animated: boolean) => {
+      const next = clampZoom(target, minZoom, MAX_ZOOM);
+      const x = clampOffset(offsetFor(point.x, width / 2, next), next, width, worldSize);
+      const y = clampOffset(offsetFor(point.y, height / 2, next), next, height, worldSize);
+      cancelAnimation(offsetX);
+      cancelAnimation(offsetY);
+      cancelAnimation(zoom);
+      if (!animated) {
+        zoom.value = next;
+        offsetX.value = x;
+        offsetY.value = y;
+        return;
+      }
+      zoom.value = withSpring(next, FOCUS_SPRING);
+      offsetX.value = withSpring(x, FOCUS_SPRING);
+      offsetY.value = withSpring(y, FOCUS_SPRING);
+    },
+    [minZoom, width, height, worldSize, zoom, offsetX, offsetY]
+  );
+
+  return useMemo(
+    () => ({ transform, gesture, minZoom, zoom, focusOn }),
+    [transform, gesture, minZoom, zoom, focusOn]
+  );
 }

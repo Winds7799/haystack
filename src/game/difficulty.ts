@@ -29,6 +29,11 @@ export interface LevelConfig {
    * straw covers. The generator searches placements until it lands in the band.
    */
   occlusion: readonly [min: number, max: number];
+  /**
+   * Seconds. Three stars at or under the first, two at or under the second,
+   * one for finishing at all. Penalties count towards the total.
+   */
+  par: readonly [three: number, two: number];
 }
 
 const BARN = 'Barn';
@@ -41,6 +46,7 @@ export const LEVELS: readonly LevelConfig[] = [
     strawCount: 26000,
     decoys: [],
     occlusion: [0, 0.1],
+    par: [20, 45],
   },
   {
     id: 2,
@@ -49,6 +55,7 @@ export const LEVELS: readonly LevelConfig[] = [
     strawCount: 28000,
     decoys: [],
     occlusion: [0.06, 0.2],
+    par: [28, 60],
   },
   {
     id: 3,
@@ -57,6 +64,7 @@ export const LEVELS: readonly LevelConfig[] = [
     strawCount: 30000,
     decoys: [{ kind: 'nail', count: 5 }],
     occlusion: [0.1, 0.24],
+    par: [35, 72],
   },
   {
     id: 4,
@@ -68,6 +76,7 @@ export const LEVELS: readonly LevelConfig[] = [
       { kind: 'pin', count: 3 },
     ],
     occlusion: [0.12, 0.28],
+    par: [42, 84],
   },
   {
     id: 5,
@@ -79,6 +88,7 @@ export const LEVELS: readonly LevelConfig[] = [
       { kind: 'pin', count: 7 },
     ],
     occlusion: [0.16, 0.32],
+    par: [50, 98],
   },
   {
     id: 6,
@@ -90,6 +100,7 @@ export const LEVELS: readonly LevelConfig[] = [
       { kind: 'pin', count: 11 },
     ],
     occlusion: [0.2, 0.36],
+    par: [58, 112],
   },
 ];
 

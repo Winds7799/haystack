@@ -23,6 +23,8 @@ export const color = {
   /** Pale split wood, for splinters. Not a chrome colour either. */
   wood: '#B6A183',
   shadow: '#050403',
+  /** Laid over the board when a panel takes the screen. */
+  scrim: '#0A0705D9',
   warning: '#A83B27',
 } as const;
 
