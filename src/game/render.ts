@@ -85,8 +85,8 @@ function quantise(value: number): number {
   return Math.round(value * STRAW_PRECISION);
 }
 
-function drawObject(canvas: SkCanvas, object: BoardObject): void {
-  const art = objectArt(object.kind);
+function drawObject(canvas: SkCanvas, object: BoardObject, similarity: number): void {
+  const art = objectArt(object.kind, similarity);
   const degrees = object.angle * DEGREES;
 
   // The shadow is offset in world space, so every object is lit from the same
@@ -124,12 +124,12 @@ export function drawWorld(canvas: SkCanvas, world: World): void {
     drawStrawRange(canvas, straw, from, to, paint);
     const depth = (slice + 1) / DEPTH_SLICES;
     while (next < objects.length && objects[next].depth <= depth) {
-      drawObject(canvas, objects[next]);
+      drawObject(canvas, objects[next], world.similarity);
       next += 1;
     }
   }
   while (next < objects.length) {
-    drawObject(canvas, objects[next]);
+    drawObject(canvas, objects[next], world.similarity);
     next += 1;
   }
 }

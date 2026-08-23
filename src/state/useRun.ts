@@ -32,11 +32,14 @@ interface RunState {
   hintUntil: number | null;
   lastMiss: Miss | null;
   finishedAt: number | null;
+  /** Indices into the board's object list, for needles already found. */
+  found: readonly number[];
 
   begin: (levelId: number, attempt: number) => void;
   pause: () => void;
   resume: () => void;
   miss: (kind: ObjectKind | null) => void;
+  markFound: (index: number) => void;
   takeHint: () => void;
   win: () => void;
 }
@@ -60,6 +63,7 @@ export const useRun = create<RunState>()((set, get) => ({
   hintUntil: null,
   lastMiss: null,
   finishedAt: null,
+  found: [],
 
   begin: (levelId, attempt) =>
     set({
@@ -74,6 +78,7 @@ export const useRun = create<RunState>()((set, get) => ({
       hintUntil: null,
       lastMiss: null,
       finishedAt: null,
+      found: [],
     }),
 
   pause: () => {
@@ -100,6 +105,13 @@ export const useRun = create<RunState>()((set, get) => ({
             penalty: state.penalty + MISS_PENALTY,
             lastMiss: { kind, serial: (state.lastMiss?.serial ?? 0) + 1 },
           }
+    ),
+
+  markFound: (index) =>
+    set((state) =>
+      state.status !== 'playing' || state.found.includes(index)
+        ? state
+        : { found: [...state.found, index] }
     ),
 
   takeHint: () =>

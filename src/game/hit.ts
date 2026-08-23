@@ -29,8 +29,33 @@ export function hitTest(world: World, point: Point): BoardObject | null {
   return best;
 }
 
+export function findNeedles(world: World): readonly BoardObject[] {
+  return world.objects.filter((object) => object.kind === 'needle');
+}
+
 export function findNeedle(world: World): BoardObject | null {
-  return world.objects.find((object) => object.kind === 'needle') ?? null;
+  return findNeedles(world)[0] ?? null;
+}
+
+/** Spins a world point about the centre of the board, the way drift does. */
+export function rotateAbout(point: Point, angle: number, worldSize: number): Point {
+  if (angle === 0) {
+    return point;
+  }
+  const centre = worldSize / 2;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const dx = point.x - centre;
+  const dy = point.y - centre;
+  return { x: centre + dx * cos - dy * sin, y: centre + dx * sin + dy * cos };
+}
+
+/**
+ * Undoes the drift rotation, so a tap on a rocking pile lands where the player
+ * saw the straw rather than where the straw was generated.
+ */
+export function unrotate(point: Point, angle: number, worldSize: number): Point {
+  return rotateAbout(point, -angle, worldSize);
 }
 
 /**

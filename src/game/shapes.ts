@@ -2,9 +2,8 @@ import { BlurStyle, Skia, StrokeCap, StrokeJoin, TileMode } from '@shopify/react
 import type { SkPaint, SkPath } from '@shopify/react-native-skia';
 import { color } from '@/ui/tokens';
 import { OBJECT_LENGTH, OBJECT_WIDTH } from './constants';
-import { rgbaFromHex } from './palette';
+import { mixHex, rgbaFromHex } from './palette';
 import type { ObjectKind } from './types';
-
 
 const METAL: Record<ObjectKind, { bright: string; deep: string }> = {
   needle: { bright: color.steel, deep: color.steelDeep },
@@ -16,19 +15,39 @@ const METAL: Record<ObjectKind, { bright: string; deep: string }> = {
   staple: { bright: color.steelDeep, deep: color.steelDark },
 };
 
+/**
+ * A decoy's own colour and thickness, pulled towards the needle's by the
+ * level's similarity. Length is never pulled: it stays a real cue, and it is
+ * the one the player learns to read first. A broken needle is already a needle
+ * in everything but the eye, so similarity does not apply to it.
+ */
+function resolve(kind: ObjectKind, similarity: number) {
+  const blend = kind === 'brokenNeedle' ? 1 : Math.max(0, Math.min(1, similarity));
+  const metal = METAL[kind];
+  const needle = METAL.needle;
+  return {
+    length: OBJECT_LENGTH[kind],
+    width: OBJECT_WIDTH[kind] + (OBJECT_WIDTH.needle - OBJECT_WIDTH[kind]) * blend,
+    bright: mixHex(metal.bright, needle.bright, blend),
+    deep: mixHex(metal.deep, needle.deep, blend),
+  };
+}
+
+type Metrics = ReturnType<typeof resolve>;
+
 export interface ObjectArt {
   length: number;
   body: SkPath;
-  /** Drawn dark over the body — the needle's eye, and nothing else so far. */
+  /** Drawn dark over the body — the needle's eye, and nothing else. */
   detail: SkPath | null;
   bodyPaint: SkPaint;
   detailPaint: SkPaint;
   shadowPaint: SkPaint;
 }
 
-function needleBody(kind: 'needle' | 'brokenNeedle'): SkPath {
-  const half = OBJECT_LENGTH[kind] / 2;
-  const hw = OBJECT_WIDTH[kind] / 2;
+function needleBody(metrics: Metrics, broken: boolean): SkPath {
+  const half = metrics.length / 2;
+  const hw = metrics.width / 2;
   const shaftEnd = half * 0.52;
   const path = Skia.Path.Make();
   path.moveTo(-half + hw, -hw);
@@ -36,29 +55,28 @@ function needleBody(kind: 'needle' | 'brokenNeedle'): SkPath {
   path.quadTo(half * 0.88, -hw * 0.42, half, 0);
   path.quadTo(half * 0.88, hw * 0.42, shaftEnd, hw);
   path.lineTo(-half + hw, hw);
-  if (kind === 'needle') {
-    path.quadTo(-half - hw * 0.6, 0, -half + hw, -hw);
-  } else {
+  if (broken) {
     // Snapped clean off just past where the eye would have been.
     path.lineTo(-half + hw * 0.2, hw * 0.3);
     path.lineTo(-half + hw * 0.9, -hw * 0.35);
     path.lineTo(-half + hw * 0.35, -hw);
+  } else {
+    path.quadTo(-half - hw * 0.6, 0, -half + hw, -hw);
   }
   path.close();
   return path;
 }
 
-function needleEye(): SkPath {
-  const length = OBJECT_LENGTH.needle;
-  const cx = -length / 2 + length * 0.17;
-  const rx = length * 0.062;
-  const ry = OBJECT_WIDTH.needle * 0.29;
+function needleEye(metrics: Metrics): SkPath {
+  const cx = -metrics.length / 2 + metrics.length * 0.17;
+  const rx = metrics.length * 0.062;
+  const ry = metrics.width * 0.29;
   return Skia.Path.Make().addOval(Skia.XYWHRect(cx - rx, -ry, rx * 2, ry * 2));
 }
 
-function nailBody(): SkPath {
-  const half = OBJECT_LENGTH.nail / 2;
-  const hw = OBJECT_WIDTH.nail / 2;
+function nailBody(metrics: Metrics): SkPath {
+  const half = metrics.length / 2;
+  const hw = metrics.width / 2;
   const path = Skia.Path.Make();
   path.moveTo(-half, -hw);
   path.lineTo(half * 0.62, -hw);
@@ -70,9 +88,9 @@ function nailBody(): SkPath {
   return path;
 }
 
-function pinBody(): SkPath {
-  const half = OBJECT_LENGTH.pin / 2;
-  const hw = OBJECT_WIDTH.pin / 2;
+function pinBody(metrics: Metrics): SkPath {
+  const half = metrics.length / 2;
+  const hw = metrics.width / 2;
   const path = Skia.Path.Make();
   path.moveTo(-half, -hw);
   path.lineTo(half * 0.66, -hw * 0.9);
@@ -84,37 +102,37 @@ function pinBody(): SkPath {
   return path;
 }
 
-function wireBody(): SkPath {
-  const half = OBJECT_LENGTH.wire / 2;
+function wireBody(metrics: Metrics): SkPath {
+  const half = metrics.length / 2;
   const centreline = Skia.Path.Make();
   centreline.moveTo(-half, 4.2);
   centreline.cubicTo(-half * 0.35, -5.4, half * 0.3, 5.2, half, -3.6);
   const stroked = centreline.stroke({
-    width: OBJECT_WIDTH.wire,
+    width: metrics.width,
     cap: StrokeCap.Butt,
     join: StrokeJoin.Round,
   });
   return stroked ?? centreline;
 }
 
-function stapleBody(): SkPath {
-  const half = OBJECT_LENGTH.staple / 2;
+function stapleBody(metrics: Metrics): SkPath {
+  const half = metrics.length / 2;
   const centreline = Skia.Path.Make();
   centreline.moveTo(-half, 5.4);
   centreline.lineTo(-half, -3.8);
   centreline.lineTo(half, -3.8);
   centreline.lineTo(half, 5.4);
   const stroked = centreline.stroke({
-    width: OBJECT_WIDTH.staple,
+    width: metrics.width,
     cap: StrokeCap.Butt,
     join: StrokeJoin.Miter,
   });
   return stroked ?? centreline;
 }
 
-function splinterBody(): SkPath {
-  const half = OBJECT_LENGTH.splinter / 2;
-  const hw = OBJECT_WIDTH.splinter / 2;
+function splinterBody(metrics: Metrics): SkPath {
+  const half = metrics.length / 2;
+  const hw = metrics.width / 2;
   const path = Skia.Path.Make();
   path.moveTo(-half, hw * 0.1);
   path.lineTo(-half * 0.52, -hw * 0.95);
@@ -127,27 +145,28 @@ function splinterBody(): SkPath {
   return path;
 }
 
-function buildBody(kind: ObjectKind): SkPath {
+function buildBody(kind: ObjectKind, metrics: Metrics): SkPath {
   switch (kind) {
     case 'needle':
+      return needleBody(metrics, false);
     case 'brokenNeedle':
-      return needleBody(kind);
+      return needleBody(metrics, true);
     case 'nail':
-      return nailBody();
+      return nailBody(metrics);
     case 'pin':
-      return pinBody();
+      return pinBody(metrics);
     case 'wire':
-      return wireBody();
+      return wireBody(metrics);
     case 'staple':
-      return stapleBody();
+      return stapleBody(metrics);
     case 'splinter':
-      return splinterBody();
+      return splinterBody(metrics);
   }
 }
 
-function buildArt(kind: ObjectKind): ObjectArt {
-  const half = OBJECT_LENGTH[kind] / 2;
-  const metal = METAL[kind];
+function buildArt(kind: ObjectKind, similarity: number): ObjectArt {
+  const metrics = resolve(kind, similarity);
+  const half = metrics.length / 2;
 
   const bodyPaint = Skia.Paint();
   bodyPaint.setAntiAlias(true);
@@ -155,7 +174,7 @@ function buildArt(kind: ObjectKind): ObjectArt {
     Skia.Shader.MakeLinearGradient(
       Skia.Point(-half, 0),
       Skia.Point(half, 0),
-      [rgbaFromHex(metal.deep), rgbaFromHex(metal.bright), rgbaFromHex(metal.deep)],
+      [metrics.deep, metrics.bright, metrics.deep],
       [0, 0.42, 1],
       TileMode.Clamp
     )
@@ -171,25 +190,26 @@ function buildArt(kind: ObjectKind): ObjectArt {
   shadowPaint.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, 1.5, false));
 
   return {
-    length: OBJECT_LENGTH[kind],
-    body: buildBody(kind),
-    detail: kind === 'needle' ? needleEye() : null,
+    length: metrics.length,
+    body: buildBody(kind, metrics),
+    detail: kind === 'needle' ? needleEye(metrics) : null,
     bodyPaint,
     detailPaint,
     shadowPaint,
   };
 }
 
-const cache = new Map<ObjectKind, ObjectArt>();
+const cache = new Map<string, ObjectArt>();
 
-/** Art is built once per kind, on first use, and reused for every board. */
-export function objectArt(kind: ObjectKind): ObjectArt {
-  const existing = cache.get(kind);
+/** Art is built once per kind and similarity, then reused across boards. */
+export function objectArt(kind: ObjectKind, similarity: number): ObjectArt {
+  const key = `${kind}:${Math.round(similarity * 100)}`;
+  const existing = cache.get(key);
   if (existing) {
     return existing;
   }
-  const built = buildArt(kind);
-  cache.set(kind, built);
+  const built = buildArt(kind, similarity);
+  cache.set(key, built);
   return built;
 }
 

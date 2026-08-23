@@ -67,3 +67,15 @@ export function rgbaFromHex(hex: string, alpha = 1): Float32Array {
 export function shade(rgba: Float32Array, factor: number): Float32Array {
   return Float32Array.of(rgba[0] * factor, rgba[1] * factor, rgba[2] * factor, rgba[3]);
 }
+
+/** Blends two token colours, for pulling a decoy's metal towards a needle's. */
+export function mixHex(from: string, to: string, amount: number): Float32Array {
+  const a = rgbaFromHex(from);
+  const b = rgbaFromHex(to);
+  return Float32Array.of(
+    a[0] + (b[0] - a[0]) * amount,
+    a[1] + (b[1] - a[1]) * amount,
+    a[2] + (b[2] - a[2]) * amount,
+    1
+  );
+}

@@ -10,13 +10,17 @@ import {
   WORLD_BLEED,
   WORLD_SIZE,
 } from './constants';
-import { groundFor, type LevelConfig } from './difficulty';
+import { groundFor, needleCount, type LevelConfig } from './difficulty';
 import { LIGHT_STEPS, TONE_STEPS, strawColorIndex } from './palette';
 import { between, centred, intBetween, mulberry32, seedFrom, type Random } from './prng';
 import type { BoardObject, ObjectKind, StrawField, World } from './types';
 
-/** How many points along an object are tested when measuring how buried it is. */
-const OCCLUSION_SAMPLES = 9;
+/**
+ * How many points along an object are tested when measuring how buried it is.
+ * This sets the resolution of the occlusion bands in the level curve: fifteen
+ * samples means the generator can hit a band about seven percent wide.
+ */
+const OCCLUSION_SAMPLES = 15;
 
 /** Placements tried before settling for the closest miss. */
 const PLACEMENT_TRIES = 48;
@@ -171,7 +175,11 @@ function place(
 }
 
 function placeObjects(rng: Random, config: LevelConfig, straw: StrawField): BoardObject[] {
-  const placed: BoardObject[] = [place(rng, straw, 'needle', [], config.occlusion)];
+  const placed: BoardObject[] = [];
+  // Twin levels hide two, and both are held to the same occlusion band.
+  for (let n = 0; n < needleCount(config); n++) {
+    placed.push(place(rng, straw, 'needle', placed, config.occlusion));
+  }
   // Decoys must be temptingly visible, so they never hide deeper than the needle.
   const decoyBand: readonly [number, number] = [0, config.occlusion[1]];
   for (const spec of config.decoys) {
@@ -196,5 +204,6 @@ export function generateWorld(config: LevelConfig, attempt: number): World {
     straw,
     objects: placeObjects(rng, config, straw),
     ground: groundFor(config),
+    similarity: config.similarity,
   };
 }

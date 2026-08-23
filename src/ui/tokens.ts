@@ -28,9 +28,21 @@ export const color = {
   warning: '#A83B27',
 } as const;
 
-/** Board grounds, one per world. Phase 1 ships the barn. */
+/** Board grounds, one per world. Each is dimmer and cooler than the last. */
 export const boardPalette = {
   barn: { centre: '#4A3416', edge: color.ink },
+  loft: { centre: '#3D2C15', edge: '#080609' },
+  dusk: { centre: '#2B2317', edge: '#060507' },
+  storm: { centre: '#242320', edge: '#050607' },
+  nightfall: { centre: '#191510', edge: '#030304' },
+} as const;
+
+/** Overlays the modifiers paint across the board. */
+export const veil = {
+  /** Warm fog that lifts the blacks and flattens the pile. */
+  haze: '#9C8A6E',
+  /** Everything outside the lantern. */
+  night: '#040303',
 } as const;
 
 export type BoardPaletteName = keyof typeof boardPalette;

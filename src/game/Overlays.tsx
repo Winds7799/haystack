@@ -1,7 +1,7 @@
 import { Blur, Circle, Group, RadialGradient, Rect, vec } from '@shopify/react-native-skia';
 import type { SharedValue } from 'react-native-reanimated';
 import { useDerivedValue } from 'react-native-reanimated';
-import { color } from '@/ui/tokens';
+import { color, veil } from '@/ui/tokens';
 import { rgbaFromHex } from './palette';
 import type { Point } from './types';
 
@@ -10,6 +10,10 @@ const DIM = rgbaFromHex(color.ink, 0.9);
 const FLUSH = rgbaFromHex(color.warning, 0);
 const FLARE = rgbaFromHex(color.warning, 0.75);
 const LIGHT = rgbaFromHex(color.steel, 0.85);
+const HAZE = rgbaFromHex(veil.haze, 0.2);
+const OPEN = rgbaFromHex(veil.night, 0);
+const NIGHT = rgbaFromHex(veil.night, 0.94);
+const MARK = rgbaFromHex(color.gold, 0.9);
 
 interface SpotlightProps {
   worldSize: number;
@@ -80,4 +84,36 @@ export function Vignette({ width, height, opacity }: VignetteProps) {
       />
     </Rect>
   );
+}
+
+interface LanternProps {
+  width: number;
+  height: number;
+  /** Where the finger last was, in screen points. */
+  touchX: SharedValue<number>;
+  touchY: SharedValue<number>;
+  radius: number;
+}
+
+/**
+ * Nightfall. Everything outside a small radius around the finger goes dark, so
+ * the board can never be read all at once, at any zoom.
+ */
+export function Lantern({ width, height, touchX, touchY, radius }: LanternProps) {
+  const centre = useDerivedValue(() => vec(touchX.value, touchY.value));
+  return (
+    <Rect x={0} y={0} width={width} height={height}>
+      <RadialGradient c={centre} r={radius} colors={[OPEN, OPEN, NIGHT]} positions={[0, 0.4, 1]} />
+    </Rect>
+  );
+}
+
+/** A flat warm veil that lifts the blacks and takes the contrast out of the pile. */
+export function Haze({ width, height }: { width: number; height: number }) {
+  return <Rect x={0} y={0} width={width} height={height} color={HAZE} />;
+}
+
+/** Rings a needle that has already been found, on twin levels. */
+export function FoundMark({ at, radius }: { at: Point; radius: number }) {
+  return <Circle c={vec(at.x, at.y)} r={radius} color={MARK} style="stroke" strokeWidth={2.2} />;
 }

@@ -70,3 +70,21 @@ export const useProgress = create<ProgressState>()(
     }
   )
 );
+
+/**
+ * Finishing a level opens the next one. Failing the same level four times also
+ * opens the next one: being stuck is not a reason to be locked out.
+ */
+export const MERCY_ATTEMPTS = 4;
+
+export function isUnlocked(
+  records: Record<number, LevelRecord>,
+  levelId: number,
+  firstLevel: number
+): boolean {
+  if (levelId <= firstLevel) {
+    return true;
+  }
+  const previous = recordFor(records, levelId - 1);
+  return previous.bestStars > 0 || previous.attempts >= MERCY_ATTEMPTS;
+}

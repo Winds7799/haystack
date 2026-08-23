@@ -35,6 +35,9 @@ export interface Camera {
   gesture: ComposedGesture;
   minZoom: number;
   zoom: SharedValue<number>;
+  /** Where the finger last was, in screen points. Drives the lantern. */
+  touchX: SharedValue<number>;
+  touchY: SharedValue<number>;
   /** Frames a world point in the middle of the screen at the given zoom. */
   focusOn: (point: Point, zoom: number, animated: boolean) => void;
 }
@@ -53,6 +56,8 @@ export function useCamera(
   const startY = useSharedValue(0);
   const anchorX = useSharedValue(0);
   const anchorY = useSharedValue(0);
+  const touchX = useSharedValue(0);
+  const touchY = useSharedValue(0);
 
   const { width, height } = viewport;
   const minZoom = useMemo(() => fitZoom({ width, height }, worldSize), [width, height, worldSize]);
@@ -71,7 +76,9 @@ export function useCamera(
     zoom.value = minZoom;
     offsetX.value = clampOffset(0, minZoom, width, worldSize);
     offsetY.value = clampOffset(0, minZoom, height, worldSize);
-  }, [minZoom, width, height, worldSize, zoom, offsetX, offsetY]);
+    touchX.value = width / 2;
+    touchY.value = height / 2;
+  }, [minZoom, width, height, worldSize, zoom, offsetX, offsetY, touchX, touchY]);
 
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
@@ -83,6 +90,8 @@ export function useCamera(
         startY.value = offsetY.value;
       })
       .onUpdate((event) => {
+        touchX.value = event.x;
+        touchY.value = event.y;
         offsetX.value = clampOffset(startX.value + event.translationX, zoom.value, width, worldSize);
         offsetY.value = clampOffset(
           startY.value + event.translationY,
@@ -120,6 +129,8 @@ export function useCamera(
         anchorY.value = event.focalY;
       })
       .onUpdate((event) => {
+        touchX.value = event.focalX;
+        touchY.value = event.focalY;
         const next = clampZoom(startZoom.value * event.scale, minZoom, MAX_ZOOM);
         const growth = next / startZoom.value;
         // Hold the world point under the fingers still, then let the fingers
@@ -147,6 +158,8 @@ export function useCamera(
       .maxDuration(TAP_DURATION)
       .maxDistance(TAP_TRAVEL)
       .onEnd((event, success) => {
+        touchX.value = event.x;
+        touchY.value = event.y;
         if (!success) {
           return;
         }
@@ -171,6 +184,8 @@ export function useCamera(
     startY,
     anchorX,
     anchorY,
+    touchX,
+    touchY,
   ]);
 
   const transform = useDerivedValue<Transforms3d>(() => [
@@ -201,7 +216,7 @@ export function useCamera(
   );
 
   return useMemo(
-    () => ({ transform, gesture, minZoom, zoom, focusOn }),
-    [transform, gesture, minZoom, zoom, focusOn]
+    () => ({ transform, gesture, minZoom, zoom, touchX, touchY, focusOn }),
+    [transform, gesture, minZoom, zoom, touchX, touchY, focusOn]
   );
 }

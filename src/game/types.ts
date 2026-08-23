@@ -69,7 +69,9 @@ export interface World {
   /** Side length of the square play area, in world units. */
   size: number;
   straw: StrawField;
-  /** Sorted by depth, ascending. Includes the needle. */
+  /** Sorted by depth, ascending. Includes every needle. */
   objects: readonly BoardObject[];
   ground: Ground;
+  /** How close this level's decoys are drawn to a needle. */
+  similarity: number;
 }
