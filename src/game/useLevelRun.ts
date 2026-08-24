@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { recordFor, useProgress } from '@/state/useProgress';
+import { postScore } from '@/net/post';
 import { HINT_DURATION, elapsedOf, useRun } from '@/state/useRun';
 import type { LevelConfig } from './difficulty';
 import { missMessage, progressMessage } from './copy';
@@ -121,6 +122,12 @@ export function useLevelRun(
       setTarget(struck);
       setCelebrating(true);
       useProgress.getState().recordFinish(levelId, milliseconds / 1000, stars);
+      postScore({
+        level: levelId,
+        seconds: milliseconds / 1000,
+        stars,
+        hintUsed: state.hintUsed,
+      });
       later(
         () =>
           setFinish({

@@ -54,7 +54,9 @@
       "router": {},
       "eas": {
         "projectId": "7a29fe15-c41b-4b63-93d6-40da699ddc5b"
-      }
+      },
+      "supabaseUrl": "",
+      "supabaseAnonKey": ""
     },
     "owner": "dahbed55"
   }

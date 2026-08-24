@@ -16,10 +16,12 @@ import { useLevelRun } from '@/game/useLevelRun';
 import type { Viewport } from '@/game/camera';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import { useRun } from '@/state/useRun';
+import { claimHeldScore, dropHeldScore, onPending } from '@/net/post';
 import { Hud } from '@/ui/components/Hud';
 import { Message } from '@/ui/components/Message';
 import { PauseSheet } from '@/ui/components/PauseSheet';
 import { Results } from '@/ui/components/Results';
+import { NamePrompt } from '@/ui/components/NamePrompt';
 import { Toast } from '@/ui/components/Toast';
 import { color } from '@/ui/tokens';
 
@@ -54,6 +56,12 @@ export default function PlayScreen() {
   const reducedMotion = settings.reducedMotion || useReducedMotion();
 
   const [viewport, setViewport] = useState<Viewport>({ width: 1, height: 1 });
+  const [needsName, setNeedsName] = useState(false);
+
+  useEffect(() => {
+    onPending((pending) => setNeedsName(pending !== null));
+    return () => onPending(null);
+  }, []);
 
   useEffect(() => {
     startAmbience();
@@ -107,6 +115,7 @@ export default function PlayScreen() {
   const onRestart = useCallback(() => setAttempt((current) => current + 1), []);
   const onQuit = useCallback(() => router.replace('/'), []);
   const onLevels = useCallback(() => router.replace('/levels'), []);
+  const onBoard = useCallback(() => router.push(`/leaderboard?level=${levelId}`), [levelId]);
   const onNext = useCallback(() => router.replace(`/play/${levelId + 1}`), [levelId]);
   const onPause = useCallback(() => useRun.getState().pause(), []);
   const onResume = useCallback(() => useRun.getState().resume(), []);
@@ -188,9 +197,22 @@ export default function PlayScreen() {
               hintUsed={run.finish.hintUsed}
               previousBest={run.finish.previousBest}
               reducedMotion={reducedMotion}
+              onBoard={onBoard}
               onRetry={onRestart}
               onNext={onNext}
               onLevels={onLevels}
+            />
+          ) : null}
+          {run.finish && needsName ? (
+            <NamePrompt
+              onSubmit={(name) => {
+                claimHeldScore(name);
+                setNeedsName(false);
+              }}
+              onSkip={() => {
+                dropHeldScore();
+                setNeedsName(false);
+              }}
             />
           ) : null}
         </>

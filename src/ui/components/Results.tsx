@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { comparedToBest, formatTime } from '@/game/scoring';
+import { leaderboardReady } from '@/net/leaderboard';
 import { LAST_LEVEL } from '@/game/difficulty';
 import { color, font, space, type } from '../tokens';
 import { Button } from './Button';
@@ -14,6 +15,7 @@ interface ResultsProps {
   /** Best before this run, so the comparison is against what they had. */
   previousBest: number;
   reducedMotion: boolean;
+  onBoard: () => void;
   onRetry: () => void;
   onNext: () => void;
   onLevels: () => void;
@@ -27,11 +29,13 @@ export function Results({
   hintUsed,
   previousBest,
   reducedMotion,
+  onBoard,
   onRetry,
   onNext,
   onLevels,
 }: ResultsProps) {
   const comparison = comparedToBest(milliseconds / 1000, previousBest);
+  const boardReady = leaderboardReady();
   const costs = [
     misses > 0 ? `${misses} miss${misses === 1 ? '' : 'es'}` : null,
     hintUsed ? 'one hint' : null,
@@ -53,7 +57,10 @@ export function Results({
           <Button label="Levels" tone="primary" onPress={onLevels} />
         )}
       </View>
-      {levelId < LAST_LEVEL ? <Button label="Levels" onPress={onLevels} /> : null}
+      <View style={styles.actions}>
+        {levelId < LAST_LEVEL ? <Button label="Levels" onPress={onLevels} /> : null}
+        {boardReady ? <Button label="Leaderboard" onPress={onBoard} /> : null}
+      </View>
     </View>
   );
 }

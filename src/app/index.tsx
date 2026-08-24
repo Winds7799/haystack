@@ -7,6 +7,7 @@ import { AmbientBoard } from '@/game/AmbientBoard';
 import { FIRST_LEVEL, LAST_LEVEL } from '@/game/difficulty';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import type { LevelRecord } from '@/state/useProgress';
+import { leaderboardReady } from '@/net/leaderboard';
 import { Button } from '@/ui/components/Button';
 import { color, font, space, type } from '@/ui/tokens';
 
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const reducedMotion = preferReducedMotion || useReducedMotion();
 
   const target = nextLevel(records);
+  const boardReady = leaderboardReady();
   const started = recordFor(records, FIRST_LEVEL).attempts > 0;
 
   const onPlay = useCallback(() => {
@@ -68,6 +70,13 @@ export default function HomeScreen() {
             onPress={() => router.push('/levels')}
             style={styles.wide}
           />
+          {boardReady ? (
+            <Button
+              label="Leaderboard"
+              onPress={() => router.push('/leaderboard')}
+              style={styles.wide}
+            />
+          ) : null}
           <Button
             label="Settings"
             onPress={() => router.push('/settings')}

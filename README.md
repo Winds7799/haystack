@@ -113,3 +113,59 @@ node tools/make-audio.mjs
 
 No multiplayer, leaderboards, daily challenges, ads, in-app purchases, analytics,
 accounts, cloud sync or achievements. Everything is local.
+
+## Leaderboard
+
+The board is off by default and the game is complete without it. Everything
+below is optional, and takes about three minutes.
+
+1. Create a project at [supabase.com](https://supabase.com). The free tier is
+   more than enough.
+2. Open the SQL editor and run [`supabase/schema.sql`](supabase/schema.sql).
+   That file is generated from the level curve by `node tools/make-schema.mjs`
+   — regenerate it if you retune `par` values, since the anti-cheat bounds are
+   derived from them.
+3. In **Project settings → API**, copy the project URL and the `anon` key into
+   `app.json`:
+
+   ```json
+   "extra": {
+     "supabaseUrl": "https://YOUR-PROJECT.supabase.co",
+     "supabaseAnonKey": "eyJ..."
+   }
+   ```
+
+The anon key is meant to be public — row level security is what protects the
+table, not the secrecy of that string.
+
+### How it works
+
+There are no accounts. On first run the app generates a random player id and
+keeps it on the device; the display name is a label hanging off that id, asked
+for once, the first time a finish is ready to post. Reinstalling starts a new
+player. That is the trade for asking nobody to sign in.
+
+One row per player per level, and a standing best only ever moves downwards —
+a slower resubmission is a no-op, enforced in the database rather than trusted
+to the client.
+
+### What the anti-cheat does and does not do
+
+Times are reported by the client, so nothing here can prove a run happened.
+`check_score()` rejects times below a per-level floor (a third of the
+three-star par) and above an hour, rejects impossible star counts, and cleans
+up names. That catches carelessness and casual tampering. It does not stop
+someone determined, and it is not meant to.
+
+If you want times that are actually verifiable, the shape of it is: submit the
+board seed and the tap that ended the run, and have the server replay the
+generator to confirm the needle was where the player says it was. That is a
+real piece of work, not a flag to flip.
+
+### Before shipping this to the App Store
+
+Display names are user-generated content. Apple's guideline 1.2 expects apps
+carrying UGC to offer a way to report objectionable content and to act on it.
+The schema trims names, caps them at 24 characters and rejects control
+characters, which is hygiene, not moderation. Either add a report path and a
+blocklist, or switch to generated handles, before submitting.

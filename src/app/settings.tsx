@@ -1,9 +1,12 @@
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { leaderboardReady } from '@/net/leaderboard';
+import { useIdentity } from '@/state/useIdentity';
 import { useProgress } from '@/state/useProgress';
 import { Button } from '@/ui/components/Button';
 import { Screen } from '@/ui/components/Screen';
+import { NamePrompt } from '@/ui/components/NamePrompt';
 import { Toggle } from '@/ui/components/Toggle';
 import { color, font, space, type } from '@/ui/tokens';
 
@@ -12,6 +15,8 @@ export default function SettingsScreen() {
   const set = useProgress((state) => state.set);
   const reset = useProgress((state) => state.reset);
   const [confirming, setConfirming] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const name = useIdentity((state) => state.name);
 
   const onReset = useCallback(() => {
     reset();
@@ -52,6 +57,20 @@ export default function SettingsScreen() {
         />
       </View>
 
+      {leaderboardReady() ? (
+        <View style={styles.group}>
+          <Button
+            label={name ? 'Change your name' : 'Set your name'}
+            note={name || 'not set'}
+            accessibilityLabel={
+              name ? `Change your leaderboard name, currently ${name}` : 'Set your leaderboard name'
+            }
+            onPress={() => setRenaming(true)}
+            style={styles.wide}
+          />
+        </View>
+      ) : null}
+
       <View style={styles.group}>
         <Button label="How to play" onPress={() => router.push('/how-to-play')} style={styles.wide} />
         {__DEV__ ? (
@@ -78,6 +97,15 @@ export default function SettingsScreen() {
           />
         )}
       </View>
+      {renaming ? (
+        <NamePrompt
+          onSubmit={(chosen) => {
+            useIdentity.getState().setName(chosen);
+            setRenaming(false);
+          }}
+          onSkip={() => setRenaming(false)}
+        />
+      ) : null}
     </Screen>
   );
 }
