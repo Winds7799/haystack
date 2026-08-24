@@ -127,6 +127,27 @@ function clack() {
   return out;
 }
 
+/**
+ * A button. Wooden rather than electronic — a short pluck with a little body,
+ * so it belongs in a barn and never sounds like a system alert. Quiet enough
+ * to hear fifty times without noticing it.
+ */
+function tap() {
+  const total = Math.floor(0.055 * RATE);
+  const rng = noise(0x7a9);
+  const out = new Float32Array(total);
+  let body = 0;
+  for (let i = 0; i < total; i++) {
+    const p = i / total;
+    const t = i / RATE;
+    body = body * 0.55 + rng() * 0.45;
+    const knock =
+      Math.sin(2 * Math.PI * 940 * t) * 0.5 + Math.sin(2 * Math.PI * 1410 * t) * 0.18;
+    out[i] = (knock + body * 0.22) * Math.exp(-p * 11) * 0.55;
+  }
+  return out;
+}
+
 /** The find. One clean tone, a fifth under it, nothing else. */
 function find() {
   const total = Math.floor(1.15 * RATE);
@@ -148,7 +169,7 @@ function find() {
 }
 
 mkdirSync(OUT, { recursive: true });
-for (const [name, make] of Object.entries({ barn, rustle, clack, find })) {
+for (const [name, make] of Object.entries({ barn, rustle, clack, find, tap })) {
   const data = wav(make());
   writeFileSync(join(OUT, `${name}.wav`), data);
   console.log(`${name}.wav  ${(data.length / 1024).toFixed(0)} KB`);

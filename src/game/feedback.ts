@@ -31,3 +31,12 @@ export function partialFeedback(): void {
 export function panFeedback(): void {
   play('rustle');
 }
+
+/**
+ * Any control anywhere. Deliberately lighter than anything the board does, so
+ * pressing a button never reads as having hit something.
+ */
+export function tapFeedback(): void {
+  buzz(() => Haptics.selectionAsync());
+  play('tap');
+}

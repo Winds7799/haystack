@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FIRST_LEVEL, LAST_LEVEL, LEVELS } from '@/game/difficulty';
+import { tapFeedback } from '@/game/feedback';
 import { formatTime } from '@/game/scoring';
 import { fetchBoard, leaderboardReady, type Standing } from '@/net/leaderboard';
 import { useIdentity } from '@/state/useIdentity';
@@ -80,7 +81,10 @@ export default function LeaderboardScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Show level ${entry.id}`}
             accessibilityState={{ selected: entry.id === level }}
-            onPress={() => setLevel(entry.id)}
+            onPress={() => {
+              tapFeedback();
+              setLevel(entry.id);
+            }}
             style={[styles.chip, entry.id === level && styles.chipOn]}
           >
             <Text style={[styles.chipText, entry.id === level && styles.chipTextOn]}>

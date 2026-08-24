@@ -10,6 +10,57 @@ const STEEL = [0xcf, 0xd6, 0xde];
 const STEEL_DEEP = [0x79, 0x83, 0x8f];
 const SHADOW = [0x05, 0x04, 0x03];
 
+/**
+ * Straw for the icon, sampled from the same hue and lightness ranges the
+ * generator uses. Nine stalks, not thirty thousand: the mark has to read at
+ * forty pixels, so this is the idea of a haystack, not a picture of one.
+ */
+function hsl(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : [x, c, 0];
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+
+// Each stalk: angle, offset along x, offset along y, length, width,
+// lightness, and whether it lies over the needle or under it. Short and
+// clustered: long stalks read as a starburst, not a pile.
+const STRAW = [
+  [-0.55, -300, -180, 520, 30, 0.30, false],
+  [0.48, 240, -260, 470, 26, 0.26, false],
+  [-1.22, 60, 300, 430, 24, 0.33, false],
+  [0.16, -180, 240, 560, 32, 0.23, false],
+  [1.28, 320, 120, 400, 22, 0.29, false],
+  [-0.32, 340, -60, 490, 28, 0.25, false],
+  [0.88, -330, 90, 440, 21, 0.31, false],
+  [-0.95, -120, -320, 460, 25, 0.27, false],
+  [1.05, 120, 330, 420, 23, 0.32, false],
+  [-0.18, -40, -70, 540, 29, 0.21, false],
+  [0.66, 300, 300, 380, 20, 0.28, false],
+  [-1.4, -320, 260, 400, 22, 0.24, false],
+  // The three that half-bury it. Kept dim, so silver still wins the tile.
+  [0.92, -140, 140, 430, 19, 0.38, true],
+  [-0.72, 170, -110, 470, 22, 0.34, true],
+  [1.42, 20, -30, 360, 17, 0.40, true],
+];
+
+/** Distance inside a straight tapered stalk, in the same form as the needle. */
+function stalkCover(px, py, size, [angle, offsetX, offsetY, length, width]) {
+  const s = size / 1024;
+  const cx = size / 2 + offsetX * s;
+  const cy = size / 2 + offsetY * s;
+  const half = (length / 2) * s;
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const along = (px - cx) * dx + (py - cy) * dy;
+  const across = (px - cx) * -dy + (py - cy) * dx;
+  const t = Math.max(0, Math.min(1, (along + half) / (2 * half)));
+  // A pointed lens, exactly like the stalks the game draws.
+  const halfWidth = (width / 2) * s * Math.sqrt(Math.max(0, 1 - Math.abs(t - 0.5) * 2));
+  return halfWidth - Math.abs(across);
+}
+
 const crcTable = Array.from({ length: 256 }, (_, n) => {
   let c = n;
   for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
@@ -101,6 +152,13 @@ function render(size, { needle = true, glow = true } = {}) {
         rgb = mix(GLOW, INK, falloff ** 0.85);
       }
       if (needle) {
+        for (const stalk of STRAW) {
+          if (stalk[6]) continue;
+          const cover = stalkCover(px, py, size, stalk);
+          if (cover > 0) {
+            rgb = mix(rgb, hsl(38 + stalk[0] * 6, 0.55, stalk[5]), Math.min(1, cover / (size * 0.002)));
+          }
+        }
         const { body, eye, t } = needleCover(px, py, size);
         const shadow = needleCover(px - size * 0.012, py - size * 0.012, size).body;
         if (shadow > 0) rgb = mix(rgb, SHADOW, Math.min(1, shadow / (size * 0.004)) * 0.55);
@@ -108,6 +166,14 @@ function render(size, { needle = true, glow = true } = {}) {
           const metal = mix(STEEL_DEEP, STEEL, Math.sin(Math.min(1, t) * Math.PI) * 0.9 + 0.1);
           rgb = mix(rgb, metal, Math.min(1, body / (size * 0.0022)));
           if (eye > 0) rgb = mix(rgb, SHADOW, Math.min(1, eye / 0.28) * 0.95);
+        }
+        // The stalks that half-bury it. This is the whole game in one mark.
+        for (const stalk of STRAW) {
+          if (!stalk[6]) continue;
+          const cover = stalkCover(px, py, size, stalk);
+          if (cover > 0) {
+            rgb = mix(rgb, hsl(40 + stalk[0] * 5, 0.6, stalk[5]), Math.min(1, cover / (size * 0.002)));
+          }
         }
       }
       const at = (y * size + x) * 4;
@@ -130,13 +196,42 @@ function renderForeground(size) {
       const py = (y + 0.5 - size / 2) / inset + size / 2;
       const { body, eye, t } = needleCover(px, py, size);
       const at = (y * size + x) * 4;
-      if (body <= 0) continue;
-      let rgb = mix(STEEL_DEEP, STEEL, Math.sin(Math.min(1, t) * Math.PI) * 0.9 + 0.1);
-      if (eye > 0) rgb = mix(rgb, SHADOW, Math.min(1, eye / 0.28) * 0.95);
+
+      // Straw first, so the mark matches the one on the other platform. The
+      // adaptive mask crops it, which is exactly what straw running off an
+      // edge should do.
+      let rgb = null;
+      let alpha = 0;
+      for (const stalk of STRAW) {
+        if (stalk[6]) continue;
+        const cover = stalkCover(px, py, size, stalk);
+        if (cover > 0) {
+          const weight = Math.min(1, cover / (size * 0.002));
+          rgb = rgb ? mix(rgb, hsl(38 + stalk[0] * 6, 0.55, stalk[5]), weight) : hsl(38 + stalk[0] * 6, 0.55, stalk[5]);
+          alpha = Math.max(alpha, weight);
+        }
+      }
+      if (body > 0) {
+        const metal = mix(STEEL_DEEP, STEEL, Math.sin(Math.min(1, t) * Math.PI) * 0.9 + 0.1);
+        const weight = Math.min(1, body / (size * 0.0022));
+        rgb = rgb ? mix(rgb, metal, weight) : metal;
+        alpha = Math.max(alpha, weight);
+        if (eye > 0) rgb = mix(rgb, SHADOW, Math.min(1, eye / 0.28) * 0.95);
+      }
+      for (const stalk of STRAW) {
+        if (!stalk[6]) continue;
+        const cover = stalkCover(px, py, size, stalk);
+        if (cover > 0) {
+          const weight = Math.min(1, cover / (size * 0.002));
+          rgb = rgb ? mix(rgb, hsl(40 + stalk[0] * 5, 0.6, stalk[5]), weight) : hsl(40 + stalk[0] * 5, 0.6, stalk[5]);
+          alpha = Math.max(alpha, weight);
+        }
+      }
+      if (!rgb) continue;
       pixels[at] = Math.round(rgb[0]);
       pixels[at + 1] = Math.round(rgb[1]);
       pixels[at + 2] = Math.round(rgb[2]);
-      pixels[at + 3] = Math.round(255 * Math.min(1, body / (size * 0.0022)));
+      pixels[at + 3] = Math.round(255 * alpha);
     }
   }
   return pixels;

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FIRST_LEVEL, LEVELS, type LevelConfig } from '@/game/difficulty';
 import { MERCY_ATTEMPTS, isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import type { LevelRecord } from '@/state/useProgress';
+import { tapFeedback } from '@/game/feedback';
 import { formatTime } from '@/game/scoring';
 import { Screen } from '@/ui/components/Screen';
 import { Stars } from '@/ui/components/Stars';
@@ -64,7 +65,10 @@ function Tile({
       accessibilityLabel={label}
       accessibilityState={{ disabled: !open }}
       disabled={!open}
-      onPress={() => router.push(`/play/${level.id}`)}
+      onPress={() => {
+        tapFeedback();
+        router.push(`/play/${level.id}`);
+      }}
       style={({ pressed }) => [styles.tile, !open && styles.locked, pressed && styles.pressed]}
     >
       <Text style={styles.number}>{level.id}</Text>

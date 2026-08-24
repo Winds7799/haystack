@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { tapFeedback } from '@/game/feedback';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { color, font, layout, radius, space, type } from '../tokens';
 
@@ -25,13 +27,18 @@ export function Button({
   disabled = false,
   style,
 }: ButtonProps) {
+  const press = useCallback(() => {
+    tapFeedback();
+    onPress();
+  }, [onPress]);
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={press}
       style={({ pressed }) => [
         styles.base,
         tone === 'primary' ? styles.primary : styles.quiet,

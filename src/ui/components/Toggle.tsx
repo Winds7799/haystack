@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { tapFeedback } from '@/game/feedback';
 import { color, font, layout, space, type } from '../tokens';
 
 interface ToggleProps {
@@ -9,13 +11,21 @@ interface ToggleProps {
 }
 
 export function Toggle({ label, detail, value, onChange }: ToggleProps) {
+  const change = useCallback(
+    (next: boolean) => {
+      tapFeedback();
+      onChange(next);
+    },
+    [onChange]
+  );
+
   return (
     <Pressable
       accessibilityRole="switch"
       accessibilityLabel={label}
       accessibilityHint={detail}
       accessibilityState={{ checked: value }}
-      onPress={() => onChange(!value)}
+      onPress={() => change(!value)}
       style={styles.row}
     >
       <View style={styles.text}>
@@ -24,7 +34,7 @@ export function Toggle({ label, detail, value, onChange }: ToggleProps) {
       </View>
       <Switch
         value={value}
-        onValueChange={onChange}
+        onValueChange={change}
         trackColor={{ true: color.goldDim, false: color.border }}
         thumbColor={value ? color.gold : color.textMuted}
         ios_backgroundColor={color.border}
