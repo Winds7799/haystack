@@ -16,7 +16,7 @@ const NIGHT = rgbaFromHex(veil.night, 0.94);
 const MARK = rgbaFromHex(color.gold, 0.9);
 
 interface SpotlightProps {
-  worldSize: number;
+  world: { width: number; height: number };
   centre: Point;
   radius: number;
   opacity: SharedValue<number>;
@@ -26,9 +26,9 @@ interface SpotlightProps {
  * Darkens the whole board except one circle. Used for the hint halo and again,
  * tighter, for the moment after the needle is found.
  */
-export function Spotlight({ worldSize, centre, radius, opacity }: SpotlightProps) {
+export function Spotlight({ world, centre, radius, opacity }: SpotlightProps) {
   return (
-    <Rect x={0} y={0} width={worldSize} height={worldSize} opacity={opacity}>
+    <Rect x={0} y={0} width={world.width} height={world.height} opacity={opacity}>
       <RadialGradient
         c={vec(centre.x, centre.y)}
         r={radius}

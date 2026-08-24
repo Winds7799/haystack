@@ -82,7 +82,7 @@ export default function PlayScreen() {
 
   const camera = useCamera(
     viewport,
-    world?.size ?? 1,
+    world,
     run.onTap,
     panFeedback,
     !run.celebrating && run.finish === null && status !== 'paused'
@@ -101,7 +101,7 @@ export default function PlayScreen() {
     if (!run.celebrating || !run.target || !world) {
       return;
     }
-    focusOn(rotateAbout(run.target, drift.angle.value, world.size), MAX_ZOOM, !reducedMotion);
+    focusOn(rotateAbout(run.target, drift.angle.value, world), MAX_ZOOM, !reducedMotion);
   }, [run.celebrating, run.target, world, focusOn, reducedMotion, drift]);
 
   const onRestart = useCallback(() => setAttempt((current) => current + 1), []);

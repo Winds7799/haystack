@@ -38,24 +38,25 @@ export function findNeedle(world: World): BoardObject | null {
 }
 
 /** Spins a world point about the centre of the board, the way drift does. */
-export function rotateAbout(point: Point, angle: number, worldSize: number): Point {
+export function rotateAbout(point: Point, angle: number, world: World): Point {
   if (angle === 0) {
     return point;
   }
-  const centre = worldSize / 2;
+  const cx = world.width / 2;
+  const cy = world.height / 2;
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const dx = point.x - centre;
-  const dy = point.y - centre;
-  return { x: centre + dx * cos - dy * sin, y: centre + dx * sin + dy * cos };
+  const dx = point.x - cx;
+  const dy = point.y - cy;
+  return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
 }
 
 /**
  * Undoes the drift rotation, so a tap on a rocking pile lands where the player
  * saw the straw rather than where the straw was generated.
  */
-export function unrotate(point: Point, angle: number, worldSize: number): Point {
-  return rotateAbout(point, -angle, worldSize);
+export function unrotate(point: Point, angle: number, world: World): Point {
+  return rotateAbout(point, -angle, world);
 }
 
 /**
@@ -68,7 +69,9 @@ const HINT_RADIUS = 0.188;
 const HINT_DRIFT = 0.5;
 
 export function hintHalo(world: World, needle: BoardObject): { centre: Point; radius: number } {
-  const radius = world.size * HINT_RADIUS;
+  // Measured off the short side, so the halo is the same share of the board
+  // however the board is shaped.
+  const radius = Math.min(world.width, world.height) * HINT_RADIUS;
   const rng = mulberry32(world.seed ^ 0x48494e54);
   const angle = rng() * Math.PI * 2;
   const distance = Math.sqrt(rng()) * radius * HINT_DRIFT;

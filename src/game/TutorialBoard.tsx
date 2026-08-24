@@ -10,7 +10,7 @@ import { generateWorld } from './generate';
 import { findNeedle, hitTest } from './hit';
 import { FoundMark, Spotlight } from './Overlays';
 import { rasterizeWorld } from './render';
-import { textureFor } from './constants';
+import { WORLD_BLEED, outerOf, textureFor } from './constants';
 import type { Point, World } from './types';
 
 const SAMPLING = { filter: FilterMode.Linear, mipmap: MipmapMode.Linear } as const;
@@ -50,7 +50,7 @@ export function TutorialBoard({
       }
       try {
         const world = generateWorld(config, 1, colourBlindSafe);
-        setBuilt({ world, texture: rasterizeWorld(world, textureFor(world.size)) });
+        setBuilt({ world, texture: rasterizeWorld(world, textureFor(outerOf(world))) });
       } catch {
         setBuilt(null);
       }
@@ -67,7 +67,7 @@ export function TutorialBoard({
 
   const world = built?.world ?? null;
   const needle = useMemo(() => (world ? findNeedle(world) : null), [world]);
-  const scale = world ? size / world.size : 1;
+  const scale = world ? size / world.width : 1;
 
   const report = useCallback(
     (x: number, y: number) => {
@@ -103,19 +103,19 @@ export function TutorialBoard({
             <Group transform={[{ scale }]}>
               <Image
                 image={built.texture}
-                x={0}
-                y={0}
-                width={built.world.size}
-                height={built.world.size}
+                x={-WORLD_BLEED}
+                y={-WORLD_BLEED}
+                width={outerOf(built.world).width}
+                height={outerOf(built.world).height}
                 fit="fill"
                 sampling={SAMPLING}
               />
               {needle && found ? (
                 <>
                   <Spotlight
-                    worldSize={built.world.size}
+                    world={built.world}
                     centre={needle}
-                    radius={built.world.size * 0.34}
+                    radius={built.world.width * 0.34}
                     opacity={halo}
                   />
                   <FoundMark at={needle} radius={FOUND_RING} />

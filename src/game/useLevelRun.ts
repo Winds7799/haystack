@@ -92,7 +92,7 @@ export function useLevelRun(
       if (!world || !config || state.status !== 'playing') {
         return;
       }
-      const struck = hitTest(world, unrotate(point, drift.angle.value, world.size));
+      const struck = hitTest(world, unrotate(point, drift.angle.value, world));
       if (struck?.kind !== 'needle') {
         missFeedback();
         state.miss(struck?.kind ?? null);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SkImage } from '@shopify/react-native-skia';
-import { textureFor } from './constants';
+import { outerOf, textureFor } from './constants';
 import { findLevel, type Modifier } from './difficulty';
 import { generateWorld } from './generate';
 import { rasterizeWorld } from './render';
@@ -61,7 +61,7 @@ export function useBoard(
           : { ...found, modifier: modifierOverride === 'none' ? undefined : modifierOverride };
       try {
         const world = generateWorld(config, attempt, colourBlindSafe);
-        const texture = rasterizeWorld(world, textureFor(world.size));
+        const texture = rasterizeWorld(world, textureFor(outerOf(world)));
         if (cancelled) {
           texture.dispose();
           return;

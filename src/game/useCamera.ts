@@ -15,12 +15,13 @@ import { MAX_ZOOM } from './constants';
 import {
   clampOffset,
   clampZoom,
-  fitZoom,
+  coverZoom,
   offsetBounds,
   offsetFor,
   screenToWorld,
   type Viewport,
 } from './camera';
+import type { Extent } from './constants';
 import type { Point } from './types';
 
 /** A tap is a tap only if the finger barely moved and barely lingered. */
@@ -44,7 +45,7 @@ export interface Camera {
 
 export function useCamera(
   viewport: Viewport,
-  worldSize: number,
+  world: Extent | null,
   onTap: (point: Point) => void,
   onPanStart: () => void,
   interactive: boolean
@@ -61,7 +62,14 @@ export function useCamera(
   const touchY = useSharedValue(0);
 
   const { width, height } = viewport;
-  const minZoom = useMemo(() => fitZoom({ width, height }, worldSize), [width, height, worldSize]);
+  // A board with no size yet still needs a valid camera, so stand in with the
+  // viewport itself: zoom one, nothing to pan, nothing to divide by zero.
+  const worldWidth = world?.width ?? width;
+  const worldHeight = world?.height ?? height;
+  const minZoom = useMemo(
+    () => coverZoom({ width, height }, { width: worldWidth, height: worldHeight }),
+    [width, height, worldWidth, worldHeight]
+  );
 
   const tapRef = useRef(onTap);
   useEffect(() => {
@@ -80,11 +88,11 @@ export function useCamera(
     cancelAnimation(offsetX);
     cancelAnimation(offsetY);
     zoom.value = minZoom;
-    offsetX.value = clampOffset(0, minZoom, width, worldSize);
-    offsetY.value = clampOffset(0, minZoom, height, worldSize);
+    offsetX.value = clampOffset(0, minZoom, width, worldWidth);
+    offsetY.value = clampOffset(0, minZoom, height, worldHeight);
     touchX.value = width / 2;
     touchY.value = height / 2;
-  }, [minZoom, width, height, worldSize, zoom, offsetX, offsetY, touchX, touchY]);
+  }, [minZoom, width, height, worldWidth, worldHeight, zoom, offsetX, offsetY, touchX, touchY]);
 
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
@@ -99,17 +107,17 @@ export function useCamera(
       .onUpdate((event) => {
         touchX.value = event.x;
         touchY.value = event.y;
-        offsetX.value = clampOffset(startX.value + event.translationX, zoom.value, width, worldSize);
+        offsetX.value = clampOffset(startX.value + event.translationX, zoom.value, width, worldWidth);
         offsetY.value = clampOffset(
           startY.value + event.translationY,
           zoom.value,
           height,
-          worldSize
+          worldHeight
         );
       })
       .onEnd((event) => {
-        const horizontal = offsetBounds(zoom.value, width, worldSize);
-        const vertical = offsetBounds(zoom.value, height, worldSize);
+        const horizontal = offsetBounds(zoom.value, width, worldWidth);
+        const vertical = offsetBounds(zoom.value, height, worldHeight);
         offsetX.value = withDecay({
           velocity: event.velocityX,
           clamp: [horizontal.low, horizontal.high],
@@ -149,13 +157,13 @@ export function useCamera(
           pinnedX + (event.focalX - anchorX.value),
           next,
           width,
-          worldSize
+          worldWidth
         );
         offsetY.value = clampOffset(
           pinnedY + (event.focalY - anchorY.value),
           next,
           height,
-          worldSize
+          worldHeight
         );
       });
 
@@ -182,7 +190,8 @@ export function useCamera(
     interactive,
     width,
     height,
-    worldSize,
+    worldWidth,
+    worldHeight,
     minZoom,
     zoom,
     offsetX,
@@ -205,8 +214,8 @@ export function useCamera(
   const focusOn = useCallback(
     (point: Point, target: number, animated: boolean) => {
       const next = clampZoom(target, minZoom, MAX_ZOOM);
-      const x = clampOffset(offsetFor(point.x, width / 2, next), next, width, worldSize);
-      const y = clampOffset(offsetFor(point.y, height / 2, next), next, height, worldSize);
+      const x = clampOffset(offsetFor(point.x, width / 2, next), next, width, worldWidth);
+      const y = clampOffset(offsetFor(point.y, height / 2, next), next, height, worldHeight);
       cancelAnimation(offsetX);
       cancelAnimation(offsetY);
       cancelAnimation(zoom);
@@ -220,7 +229,7 @@ export function useCamera(
       offsetX.value = withSpring(x, FOCUS_SPRING);
       offsetY.value = withSpring(y, FOCUS_SPRING);
     },
-    [minZoom, width, height, worldSize, zoom, offsetX, offsetY]
+    [minZoom, width, height, worldWidth, worldHeight, zoom, offsetX, offsetY]
   );
 
   return useMemo(

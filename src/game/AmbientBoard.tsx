@@ -6,6 +6,7 @@ import { useDerivedValue, useFrameCallback, useSharedValue } from 'react-native-
 import type { Transforms3d } from '@shopify/react-native-skia';
 import { BARN } from './worlds';
 import { generateWorld } from './generate';
+import { WORLD_BLEED, outerOf } from './constants';
 import { rasterizeWorld } from './render';
 
 /**
@@ -48,7 +49,8 @@ export function AmbientBoard({
             id: 0,
             world: BARN,
             strawCount: 5200,
-            worldSize: AMBIENT_SIZE,
+            worldWidth: AMBIENT_SIZE,
+            worldHeight: AMBIENT_SIZE,
             similarity: 0,
             decoys: [],
             occlusion: [0, 1],
@@ -57,7 +59,7 @@ export function AmbientBoard({
           1,
           false
         );
-        setTexture(rasterizeWorld(world, AMBIENT_TEXTURE));
+        setTexture(rasterizeWorld(world, { width: AMBIENT_TEXTURE, height: AMBIENT_TEXTURE }));
       } catch {
         // A missing backdrop is not worth blocking the home screen for.
       }
@@ -96,10 +98,10 @@ export function AmbientBoard({
       <Group transform={transform} opacity={0.32}>
         <Image
           image={texture}
-          x={0}
-          y={0}
-          width={AMBIENT_SIZE}
-          height={AMBIENT_SIZE}
+          x={-WORLD_BLEED}
+          y={-WORLD_BLEED}
+          width={AMBIENT_SIZE + WORLD_BLEED * 2}
+          height={AMBIENT_SIZE + WORLD_BLEED * 2}
           fit="fill"
           sampling={SAMPLING}
         />

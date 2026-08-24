@@ -1,6 +1,6 @@
 import { Skia, TileMode } from '@shopify/react-native-skia';
 import type { SkCanvas, SkImage, SkPaint } from '@shopify/react-native-skia';
-import { DEPTH_SLICES, STRAW_PRECISION } from './constants';
+import { DEPTH_SLICES, STRAW_PRECISION, WORLD_BLEED, outerOf, type Extent } from './constants';
 import { STRAW_PALETTE, rgbaFromHex } from './palette';
 import { SHADOW_OFFSET, objectArt } from './shapes';
 import type { BoardObject, StrawField, World } from './types';
@@ -12,14 +12,18 @@ function drawGround(canvas: SkCanvas, world: World): void {
   paint.setShader(
     Skia.Shader.MakeRadialGradient(
       // Light falls from a little above the middle of the pile.
-      Skia.Point(world.size * 0.5, world.size * 0.42),
-      world.size * 0.74,
+      Skia.Point(world.width * 0.5, world.height * 0.42),
+      Math.max(world.width, world.height) * 0.62,
       [rgbaFromHex(world.ground.centre), rgbaFromHex(world.ground.edge)],
       [0, 1],
       TileMode.Clamp
     )
   );
-  canvas.drawRect(Skia.XYWHRect(0, 0, world.size, world.size), paint);
+  const outer = outerOf(world);
+  canvas.drawRect(
+    Skia.XYWHRect(-WORLD_BLEED, -WORLD_BLEED, outer.width, outer.height),
+    paint
+  );
 }
 
 /**
@@ -138,19 +142,21 @@ export function drawWorld(canvas: SkCanvas, world: World): void {
  * Bakes the board into a single square texture. Everything after this is one
  * image blit per frame, however much straw the level asked for.
  */
-export function rasterizeWorld(world: World, textureSize: number): SkImage {
+export function rasterizeWorld(world: World, texture: Extent): SkImage {
   // A CPU surface, deliberately. MakeOffscreen needs a GPU context, and the
   // only thread that reliably has one is the UI thread — Skia's own offscreen
   // helper is a worklet for exactly that reason. Generation runs here on the JS
   // thread, and the board is wanted as a raster image either way, so a CPU
   // surface is both the safe choice and the honest one.
-  const surface = Skia.Surface.Make(textureSize, textureSize);
+  const surface = Skia.Surface.Make(texture.width, texture.height);
   if (!surface) {
-    throw new Error(`Could not allocate a ${textureSize}px board texture`);
+    throw new Error(`Could not allocate a ${texture.width} by ${texture.height} board texture`);
   }
   const canvas = surface.getCanvas();
-  const scale = textureSize / world.size;
-  canvas.scale(scale, scale);
+  const outer = outerOf(world);
+  canvas.scale(texture.width / outer.width, texture.height / outer.height);
+  // The texture's origin is the top left of the bleed, not of the board.
+  canvas.translate(WORLD_BLEED, WORLD_BLEED);
   drawWorld(canvas, world);
   surface.flush();
   return surface.makeImageSnapshot();

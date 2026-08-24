@@ -12,7 +12,7 @@ import type { SkImage } from '@shopify/react-native-skia';
 import { motion } from '@/ui/tokens';
 import type { Viewport } from './camera';
 import { FoundMark, Glint, Haze, Lantern, Spotlight, Vignette } from './Overlays';
-import { OBJECT_LENGTH } from './constants';
+import { OBJECT_LENGTH, WORLD_BLEED, outerOf } from './constants';
 import type { Modifier } from './difficulty';
 import type { Drift } from './useDrift';
 import type { Camera } from './useCamera';
@@ -103,7 +103,9 @@ export function Board({
     );
   }, [celebrating, reducedMotion, winOpacity, glintOpacity, glintProgress]);
 
-  const centre = vec(world.size / 2, world.size / 2);
+  const centre = vec(world.width / 2, world.height / 2);
+  // Drawn from the bleed's corner, so a drifting board never turns a gap into view.
+  const outer = outerOf(world);
   // The lantern goes out for the win moment, or the payoff happens in the dark.
   const lanternOn = modifier === 'lantern' && !celebrating;
 
@@ -114,10 +116,10 @@ export function Board({
           <Group transform={drift.transform} origin={centre}>
             <Image
               image={texture}
-              x={0}
-              y={0}
-              width={world.size}
-              height={world.size}
+              x={-WORLD_BLEED}
+              y={-WORLD_BLEED}
+              width={outer.width}
+              height={outer.height}
               fit="fill"
               sampling={SAMPLING}
             />
@@ -126,7 +128,7 @@ export function Board({
             ))}
             {hint ? (
               <Spotlight
-                worldSize={world.size}
+                world={world}
                 centre={hint.centre}
                 radius={hint.radius}
                 opacity={hintOpacity}
@@ -135,7 +137,7 @@ export function Board({
             {celebrating ? (
               <>
                 <Spotlight
-                  worldSize={world.size}
+                  world={world}
                   centre={needle}
                   radius={WIN_HALO}
                   opacity={winOpacity}

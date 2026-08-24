@@ -66,8 +66,9 @@ export interface Ground {
 
 export interface World {
   seed: number;
-  /** Side length of the square play area, in world units. */
-  size: number;
+  /** The play area, in world units. */
+  width: number;
+  height: number;
   straw: StrawField;
   /** Sorted by depth, ascending. Includes every needle. */
   objects: readonly BoardObject[];

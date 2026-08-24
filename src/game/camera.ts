@@ -1,3 +1,4 @@
+import type { Extent } from './constants';
 import type { Point } from './types';
 
 /**
@@ -15,10 +16,14 @@ export interface OffsetBounds {
   high: number;
 }
 
-/** The zoom at which the whole board is visible. Also the minimum zoom. */
-export function fitZoom(viewport: Viewport, worldSize: number): number {
+/**
+ * The smallest zoom that still covers the screen. Using the larger of the two
+ * ratios rather than the smaller is the whole reason the board never shows a
+ * black band: the world is always at least as big as the viewport.
+ */
+export function coverZoom(viewport: Viewport, world: Extent): number {
   'worklet';
-  return Math.min(viewport.width, viewport.height) / worldSize;
+  return Math.max(viewport.width / world.width, viewport.height / world.height);
 }
 
 /**
