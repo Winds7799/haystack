@@ -59,7 +59,7 @@ function needleBody(metrics: Metrics, broken: boolean): SkPath {
   const half = metrics.length / 2;
   const hw = metrics.width / 2;
   const shaftEnd = half * 0.52;
-  const path = Skia.Path.Make();
+  const path = Skia.PathBuilder.Make();
   path.moveTo(-half + hw, -hw);
   path.lineTo(shaftEnd, -hw);
   path.quadTo(half * 0.88, -hw * 0.42, half, 0);
@@ -74,35 +74,35 @@ function needleBody(metrics: Metrics, broken: boolean): SkPath {
     path.quadTo(-half - hw * 0.6, 0, -half + hw, -hw);
   }
   path.close();
-  return path;
+  return path.detach();
 }
 
 function needleEye(metrics: Metrics): SkPath {
   const cx = -metrics.length / 2 + metrics.length * 0.17;
   const rx = metrics.length * 0.062;
   const ry = metrics.width * 0.29;
-  return Skia.Path.Make().addOval(Skia.XYWHRect(cx - rx, -ry, rx * 2, ry * 2));
+  return Skia.Path.Oval(Skia.XYWHRect(cx - rx, -ry, rx * 2, ry * 2));
 }
 
 function nailBody(metrics: Metrics): SkPath {
   const half = metrics.length / 2;
   const hw = metrics.width / 2;
-  const path = Skia.Path.Make();
+  const head = hw * 1.9 * metrics.feature;
+  const path = Skia.PathBuilder.Make();
   path.moveTo(-half, -hw);
   path.lineTo(half * 0.62, -hw);
   path.lineTo(half, 0);
   path.lineTo(half * 0.62, hw);
   path.lineTo(-half, hw);
   path.close();
-  const head = hw * 1.9 * metrics.feature;
   path.addRRect(Skia.RRectXY(Skia.XYWHRect(-half - 2.6, -head, 3.6, head * 2), 1.2, 1.2));
-  return path;
+  return path.detach();
 }
 
 function pinBody(metrics: Metrics): SkPath {
   const half = metrics.length / 2;
   const hw = metrics.width / 2;
-  const path = Skia.Path.Make();
+  const path = Skia.PathBuilder.Make();
   path.moveTo(-half, -hw);
   path.lineTo(half * 0.66, -hw * 0.9);
   path.lineTo(half, 0);
@@ -110,42 +110,46 @@ function pinBody(metrics: Metrics): SkPath {
   path.lineTo(-half, hw);
   path.close();
   path.addCircle(-half - hw * 1.1, 0, hw * 2.3 * metrics.feature);
-  return path;
+  return path.detach();
 }
 
 function wireBody(metrics: Metrics): SkPath {
   const half = metrics.length / 2;
-  const centreline = Skia.Path.Make();
+  const centreline = Skia.PathBuilder.Make();
   centreline.moveTo(-half, 4.2);
   centreline.cubicTo(-half * 0.35, -5.4, half * 0.3, 5.2, half, -3.6);
-  const stroked = centreline.stroke({
-    width: metrics.width,
-    cap: StrokeCap.Butt,
-    join: StrokeJoin.Round,
-  });
-  return stroked ?? centreline;
+  const spine = centreline.detach();
+  return (
+    Skia.Path.Stroke(spine, {
+      width: metrics.width,
+      cap: StrokeCap.Butt,
+      join: StrokeJoin.Round,
+    }) ?? spine
+  );
 }
 
 function stapleBody(metrics: Metrics): SkPath {
   const half = metrics.length / 2;
-  const centreline = Skia.Path.Make();
   const leg = 5.4 * metrics.feature;
+  const centreline = Skia.PathBuilder.Make();
   centreline.moveTo(-half, leg);
   centreline.lineTo(-half, -3.8);
   centreline.lineTo(half, -3.8);
   centreline.lineTo(half, leg);
-  const stroked = centreline.stroke({
-    width: metrics.width,
-    cap: StrokeCap.Butt,
-    join: StrokeJoin.Miter,
-  });
-  return stroked ?? centreline;
+  const spine = centreline.detach();
+  return (
+    Skia.Path.Stroke(spine, {
+      width: metrics.width,
+      cap: StrokeCap.Butt,
+      join: StrokeJoin.Miter,
+    }) ?? spine
+  );
 }
 
 function splinterBody(metrics: Metrics): SkPath {
   const half = metrics.length / 2;
   const hw = metrics.width / 2;
-  const path = Skia.Path.Make();
+  const path = Skia.PathBuilder.Make();
   path.moveTo(-half, hw * 0.1);
   path.lineTo(-half * 0.52, -hw * 0.95);
   path.lineTo(0, -hw * 0.5);
@@ -154,7 +158,7 @@ function splinterBody(metrics: Metrics): SkPath {
   path.lineTo(half * 0.38, hw * 0.55);
   path.lineTo(-half * 0.24, hw);
   path.close();
-  return path;
+  return path.detach();
 }
 
 function buildBody(kind: ObjectKind, metrics: Metrics): SkPath {
