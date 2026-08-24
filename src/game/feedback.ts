@@ -13,9 +13,26 @@ function buzz(run: () => Promise<void>): void {
   run().catch(() => undefined);
 }
 
+/** A decoy: something was there, and it was the wrong thing. */
 export function missFeedback(): void {
   buzz(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning));
   play('clack');
+}
+
+/** Straw: nothing was there at all. Duller, so the two are told apart by ear. */
+export function strawFeedback(): void {
+  buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft));
+  play('thud');
+}
+
+/** The level is over and the result is on screen. */
+export function completeFeedback(): void {
+  play('fanfare');
+}
+
+/** One star landing on the results panel. */
+export function starFeedback(): void {
+  play('star');
 }
 
 export function winFeedback(): void {

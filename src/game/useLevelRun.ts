@@ -4,7 +4,14 @@ import { postScore } from '@/net/post';
 import { HINT_DURATION, elapsedOf, useRun } from '@/state/useRun';
 import type { LevelConfig } from './difficulty';
 import { missMessage, progressMessage } from './copy';
-import { missFeedback, partialFeedback, winFeedback } from './feedback';
+import {
+  completeFeedback,
+  missFeedback,
+  partialFeedback,
+  strawFeedback,
+  winFeedback,
+} from './feedback';
+import { showRewardedAd } from '@/ads/rewarded';
 import { hintHalo, hitTest, unrotate } from './hit';
 import { starsFor } from './scoring';
 import type { Drift } from './useDrift';
@@ -29,6 +36,8 @@ export interface Halo {
 export interface LevelRun {
   onTap: (point: Point) => void;
   onHint: () => void;
+  /** True while an ad is being fetched or shown. */
+  buyingHint: boolean;
   hint: Halo | null;
   finish: Finish | null;
   celebrating: boolean;
@@ -95,7 +104,11 @@ export function useLevelRun(
       }
       const struck = hitTest(world, unrotate(point, drift.angle.value, world));
       if (struck?.kind !== 'needle') {
-        missFeedback();
+        if (struck) {
+          missFeedback();
+        } else {
+          strawFeedback();
+        }
         state.miss(struck?.kind ?? null);
         say(missMessage(struck?.kind ?? null));
         return;
@@ -114,7 +127,7 @@ export function useLevelRun(
 
       const milliseconds = elapsedOf(state);
       const previousBest = recordFor(useProgress.getState().records, levelId).bestTime;
-      const stars = starsFor(config, milliseconds / 1000, state.hintUsed);
+      const stars = starsFor(config, milliseconds / 1000, state.hints > 0);
       winFeedback();
       state.markFound(index);
       state.win();
@@ -126,26 +139,32 @@ export function useLevelRun(
         level: levelId,
         seconds: milliseconds / 1000,
         stars,
-        hintUsed: state.hintUsed,
+        hintUsed: state.hints > 0,
       });
-      later(
-        () =>
-          setFinish({
-            milliseconds,
-            stars,
-            misses: state.misses,
-            hintUsed: state.hintUsed,
-            previousBest,
-          }),
-        CELEBRATION
-      );
+      later(() => {
+        completeFeedback();
+        setFinish({
+          milliseconds,
+          stars,
+          misses: state.misses,
+          hintUsed: state.hints > 0,
+          previousBest,
+        });
+      }, CELEBRATION);
     },
     [world, config, needles.length, levelId, later, say, drift]
   );
 
-  const onHint = useCallback(() => {
+  const [buyingHint, setBuyingHint] = useState(false);
+
+  /**
+   * A hint is paid for with an ad, then with ten seconds, then with the third
+   * star. The clock keeps running while the ad plays — a hint should cost
+   * something even when it is free to buy.
+   */
+  const onHint = useCallback(async () => {
     const state = useRun.getState();
-    if (!world || state.hintUsed || state.status !== 'playing') {
+    if (!world || state.status !== 'playing' || buyingHint) {
       return;
     }
     // On a twin level the hint points at whichever needle is still out there.
@@ -153,10 +172,25 @@ export function useLevelRun(
     if (!pending) {
       return;
     }
-    state.takeHint();
+
+    setBuyingHint(true);
+    const outcome = await showRewardedAd();
+    setBuyingHint(false);
+
+    // Only walking out of the ad forfeits the hint. No ad to show is the
+    // game's problem, not the player's.
+    if (outcome === 'dismissed') {
+      say('no hint — you left the ad early');
+      return;
+    }
+    if (useRun.getState().status !== 'playing') {
+      return;
+    }
+
+    useRun.getState().takeHint();
     setHint(hintHalo(world, pending));
     later(() => setHint(null), HINT_DURATION);
-  }, [world, needles, later]);
+  }, [world, needles, later, say, buyingHint]);
 
-  return { onTap, onHint, hint, finish, celebrating, target, toast };
+  return { onTap, onHint, buyingHint, hint, finish, celebrating, target, toast };
 }

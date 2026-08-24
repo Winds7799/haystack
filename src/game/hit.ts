@@ -65,13 +65,15 @@ export function unrotate(point: Point, angle: number, world: World): Point {
  * answer it. The offset is drawn from the board seed so the same board always
  * gives the same halo.
  */
-const HINT_RADIUS = 0.188;
+const HINT_SHARE = 0.25;
 const HINT_DRIFT = 0.5;
 
 export function hintHalo(world: World, needle: BoardObject): { centre: Point; radius: number } {
   // Measured off the short side, so the halo is the same share of the board
   // however the board is shaped.
-  const radius = Math.min(world.width, world.height) * HINT_RADIUS;
+  // Sized by area rather than by a side, so a quarter is a quarter whatever
+  // shape the board is.
+  const radius = Math.sqrt((world.width * world.height * HINT_SHARE) / Math.PI);
   const rng = mulberry32(world.seed ^ 0x48494e54);
   const angle = rng() * Math.PI * 2;
   const distance = Math.sqrt(rng()) * radius * HINT_DRIFT;

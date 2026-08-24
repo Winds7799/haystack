@@ -169,3 +169,22 @@ carrying UGC to offer a way to report objectionable content and to act on it.
 The schema trims names, caps them at 24 characters and rejects control
 characters, which is hygiene, not moderation. Either add a report path and a
 blocklist, or switch to generated handles, before submitting.
+
+## Hints and ads
+
+A hint dims the board and lights a quarter of it for a second and a half. It
+costs ten seconds, and taking any hint at all caps the level at two stars.
+Hints are not limited to one per level — each one costs another ad.
+
+The rewarded ad runs on `react-native-google-mobile-ads` with **Google's public
+test unit IDs**. It will show test ads to anyone until you replace them:
+
+- `src/ads/rewarded.ts` — the ad unit
+- `app.json` under `react-native-google-mobile-ads` — the app IDs
+
+The ad module is loaded lazily inside a try/catch. On a build made before this
+dependency existed, or with no network, `adsAvailable()` is false and a hint is
+simply granted. Nobody loses a hint to an outage.
+
+**This requires a new native build.** `npx expo start` alone will not pick up
+the ad SDK.

@@ -6,6 +6,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { starFeedback } from '@/game/feedback';
 import { MAX_STARS } from '@/game/scoring';
 import { color, font, motion, space, type } from '../tokens';
 
@@ -42,10 +43,17 @@ function Star({ filled, size, delay }: { filled: boolean; size: number; delay: n
   const shown = useSharedValue(delay > 0 ? 0 : 1);
 
   useEffect(() => {
-    if (delay > 0) {
-      shown.value = withDelay(delay, withTiming(1, { duration: motion.normal }));
+    if (delay === 0) {
+      return;
     }
-  }, [delay, shown]);
+    shown.value = withDelay(delay, withTiming(1, { duration: motion.normal }));
+    // Only an earned star is worth a sound; the empty ones arrive silently.
+    if (!filled) {
+      return;
+    }
+    const tick = setTimeout(starFeedback, delay);
+    return () => clearTimeout(tick);
+  }, [delay, filled, shown]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: shown.value,

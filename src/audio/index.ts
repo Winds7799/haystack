@@ -13,6 +13,9 @@ const SOURCES = {
   clack: require('../../assets/audio/clack.wav'),
   find: require('../../assets/audio/find.wav'),
   tap: require('../../assets/audio/tap.wav'),
+  fanfare: require('../../assets/audio/fanfare.wav'),
+  star: require('../../assets/audio/star.wav'),
+  thud: require('../../assets/audio/thud.wav'),
 } as const;
 
 export type Cue = keyof typeof SOURCES;
@@ -23,6 +26,9 @@ const LEVEL: Record<Cue, number> = {
   clack: 0.5,
   find: 0.45,
   tap: 0.32,
+  fanfare: 0.4,
+  star: 0.34,
+  thud: 0.45,
 };
 
 /** Straw does not rustle more often than this, however fast the panning is. */

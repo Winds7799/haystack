@@ -5,9 +5,9 @@ export type RunStatus = 'playing' | 'paused' | 'won';
 
 /** What a miss costs, and what a hint costs, in milliseconds. */
 export const MISS_PENALTY = 5000;
-export const HINT_PENALTY = 15000;
+export const HINT_PENALTY = 10000;
 /** How long the hint halo stays on the board. */
-export const HINT_DURATION = 2000;
+export const HINT_DURATION = 1500;
 
 export interface Miss {
   /** null when the tap landed on nothing but straw. */
@@ -27,7 +27,8 @@ interface RunState {
   /** Milliseconds added by misses and hints. */
   penalty: number;
   misses: number;
-  hintUsed: boolean;
+  /** How many hints this run has taken. Any at all caps the level at two stars. */
+  hints: number;
   /** When the hint halo should disappear, or null when no hint is showing. */
   hintUntil: number | null;
   lastMiss: Miss | null;
@@ -59,7 +60,7 @@ export const useRun = create<RunState>()((set, get) => ({
   since: null,
   penalty: 0,
   misses: 0,
-  hintUsed: false,
+  hints: 0,
   hintUntil: null,
   lastMiss: null,
   finishedAt: null,
@@ -74,7 +75,7 @@ export const useRun = create<RunState>()((set, get) => ({
       since: Date.now(),
       penalty: 0,
       misses: 0,
-      hintUsed: false,
+      hints: 0,
       hintUntil: null,
       lastMiss: null,
       finishedAt: null,
@@ -116,10 +117,10 @@ export const useRun = create<RunState>()((set, get) => ({
 
   takeHint: () =>
     set((state) =>
-      state.status !== 'playing' || state.hintUsed
+      state.status !== 'playing'
         ? state
         : {
-            hintUsed: true,
+            hints: state.hints + 1,
             penalty: state.penalty + HINT_PENALTY,
             hintUntil: Date.now() + HINT_DURATION,
           }

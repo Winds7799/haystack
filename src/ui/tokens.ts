@@ -25,6 +25,8 @@ export const color = {
   shadow: '#050403',
   /** Laid over the board when a panel takes the screen. */
   scrim: '#0A0705D9',
+  /** Lifts type off the landing pile without hiding it. */
+  wash: '#0A070599',
   warning: '#A83B27',
 } as const;
 

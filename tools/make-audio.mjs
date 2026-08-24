@@ -168,8 +168,69 @@ function find() {
   return out;
 }
 
+/**
+ * The level is done. A rising third over the find tone — warm, brief, and
+ * quiet enough to sit under a results panel rather than announce itself.
+ */
+function fanfare() {
+  const total = Math.floor(1.4 * RATE);
+  const out = new Float32Array(total);
+  const notes = [
+    [523.25, 0.0],
+    [659.25, 0.09],
+    [783.99, 0.18],
+  ];
+  for (let i = 0; i < total; i++) {
+    const t = i / RATE;
+    let sum = 0;
+    for (const [freq, start] of notes) {
+      if (t < start) continue;
+      const age = t - start;
+      const attack = Math.min(1, age / 0.02);
+      const decay = Math.exp(-age * 2.6);
+      sum +=
+        attack *
+        decay *
+        (0.42 * Math.sin(2 * Math.PI * freq * age) +
+          0.14 * Math.sin(2 * Math.PI * freq * 2 * age));
+    }
+    out[i] = sum * 0.5;
+  }
+  return out;
+}
+
+/** One star landing. A short bright tick, three of which make a phrase. */
+function star() {
+  const total = Math.floor(0.3 * RATE);
+  const out = new Float32Array(total);
+  for (let i = 0; i < total; i++) {
+    const t = i / RATE;
+    const p = i / total;
+    out[i] =
+      Math.min(1, t / 0.006) *
+      Math.exp(-p * 7) *
+      (0.4 * Math.sin(2 * Math.PI * 1318.5 * t) + 0.15 * Math.sin(2 * Math.PI * 1975.5 * t)) *
+      0.6;
+  }
+  return out;
+}
+
+/** A miss that lands on nothing. Duller and lower than a decoy's clack. */
+function thud() {
+  const total = Math.floor(0.16 * RATE);
+  const rng = noise(0x71d0);
+  const out = new Float32Array(total);
+  let low = 0;
+  for (let i = 0; i < total; i++) {
+    const p = i / total;
+    low = low * 0.85 + rng() * 0.15;
+    out[i] = (low * 0.7 + Math.sin(2 * Math.PI * 96 * (i / RATE)) * 0.5) * Math.exp(-p * 9) * 0.8;
+  }
+  return out;
+}
+
 mkdirSync(OUT, { recursive: true });
-for (const [name, make] of Object.entries({ barn, rustle, clack, find, tap })) {
+for (const [name, make] of Object.entries({ barn, rustle, clack, find, tap, fanfare, star, thud })) {
   const data = wav(make());
   writeFileSync(join(OUT, `${name}.wav`), data);
   console.log(`${name}.wav  ${(data.length / 1024).toFixed(0)} KB`);
