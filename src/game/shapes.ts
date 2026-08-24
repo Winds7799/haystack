@@ -5,6 +5,11 @@ import { OBJECT_LENGTH, OBJECT_WIDTH } from './constants';
 import { mixHex, rgbaFromHex } from './palette';
 import type { ObjectKind } from './types';
 
+/** How far thickness may still converge in colour-blind-safe mode. */
+const EMPHASIS_WIDTH_CAP = 0.3;
+/** How much a kind's signature feature grows in colour-blind-safe mode. */
+const EMPHASIS_FEATURE = 1.5;
+
 const METAL: Record<ObjectKind, { bright: string; deep: string }> = {
   needle: { bright: color.steel, deep: color.steelDeep },
   brokenNeedle: { bright: color.steel, deep: color.steelDeep },
@@ -21,15 +26,20 @@ const METAL: Record<ObjectKind, { bright: string; deep: string }> = {
  * the one the player learns to read first. A broken needle is already a needle
  * in everything but the eye, so similarity does not apply to it.
  */
-function resolve(kind: ObjectKind, similarity: number) {
-  const blend = kind === 'brokenNeedle' ? 1 : Math.max(0, Math.min(1, similarity));
+function resolve(kind: ObjectKind, similarity: number, emphasis: boolean) {
+  const asked = kind === 'brokenNeedle' ? 1 : Math.max(0, Math.min(1, similarity));
+  // Colour-blind-safe mode holds thickness back and exaggerates each kind's
+  // signature feature, so the tell is silhouette rather than hue. Colour still
+  // converges: taking that away would give sighted players an easier game.
+  const blend = emphasis ? Math.min(asked, EMPHASIS_WIDTH_CAP) : asked;
   const metal = METAL[kind];
   const needle = METAL.needle;
   return {
     length: OBJECT_LENGTH[kind],
     width: OBJECT_WIDTH[kind] + (OBJECT_WIDTH.needle - OBJECT_WIDTH[kind]) * blend,
-    bright: mixHex(metal.bright, needle.bright, blend),
-    deep: mixHex(metal.deep, needle.deep, blend),
+    bright: mixHex(metal.bright, needle.bright, asked),
+    deep: mixHex(metal.deep, needle.deep, asked),
+    feature: emphasis ? EMPHASIS_FEATURE : 1,
   };
 }
 
@@ -84,7 +94,8 @@ function nailBody(metrics: Metrics): SkPath {
   path.lineTo(half * 0.62, hw);
   path.lineTo(-half, hw);
   path.close();
-  path.addRRect(Skia.RRectXY(Skia.XYWHRect(-half - 2.6, -hw * 1.9, 3.6, hw * 3.8), 1.2, 1.2));
+  const head = hw * 1.9 * metrics.feature;
+  path.addRRect(Skia.RRectXY(Skia.XYWHRect(-half - 2.6, -head, 3.6, head * 2), 1.2, 1.2));
   return path;
 }
 
@@ -98,7 +109,7 @@ function pinBody(metrics: Metrics): SkPath {
   path.lineTo(half * 0.66, hw * 0.9);
   path.lineTo(-half, hw);
   path.close();
-  path.addCircle(-half - hw * 1.1, 0, hw * 2.3);
+  path.addCircle(-half - hw * 1.1, 0, hw * 2.3 * metrics.feature);
   return path;
 }
 
@@ -118,10 +129,11 @@ function wireBody(metrics: Metrics): SkPath {
 function stapleBody(metrics: Metrics): SkPath {
   const half = metrics.length / 2;
   const centreline = Skia.Path.Make();
-  centreline.moveTo(-half, 5.4);
+  const leg = 5.4 * metrics.feature;
+  centreline.moveTo(-half, leg);
   centreline.lineTo(-half, -3.8);
   centreline.lineTo(half, -3.8);
-  centreline.lineTo(half, 5.4);
+  centreline.lineTo(half, leg);
   const stroked = centreline.stroke({
     width: metrics.width,
     cap: StrokeCap.Butt,
@@ -164,8 +176,8 @@ function buildBody(kind: ObjectKind, metrics: Metrics): SkPath {
   }
 }
 
-function buildArt(kind: ObjectKind, similarity: number): ObjectArt {
-  const metrics = resolve(kind, similarity);
+function buildArt(kind: ObjectKind, similarity: number, emphasis: boolean): ObjectArt {
+  const metrics = resolve(kind, similarity, emphasis);
   const half = metrics.length / 2;
 
   const bodyPaint = Skia.Paint();
@@ -201,14 +213,14 @@ function buildArt(kind: ObjectKind, similarity: number): ObjectArt {
 
 const cache = new Map<string, ObjectArt>();
 
-/** Art is built once per kind and similarity, then reused across boards. */
-export function objectArt(kind: ObjectKind, similarity: number): ObjectArt {
-  const key = `${kind}:${Math.round(similarity * 100)}`;
+/** Art is built once per kind, similarity and mode, then reused across boards. */
+export function objectArt(kind: ObjectKind, similarity: number, emphasis: boolean): ObjectArt {
+  const key = `${kind}:${Math.round(similarity * 100)}:${emphasis ? 'safe' : 'plain'}`;
   const existing = cache.get(key);
   if (existing) {
     return existing;
   }
-  const built = buildArt(kind, similarity);
+  const built = buildArt(kind, similarity, emphasis);
   cache.set(key, built);
   return built;
 }

@@ -12,6 +12,8 @@ interface HudProps {
   misses: number;
   running: boolean;
   hintUsed: boolean;
+  /** Mirrors the bottom row, so hint and pause fall under a left thumb. */
+  leftHanded: boolean;
   onHint: () => void;
   onPause: () => void;
 }
@@ -22,7 +24,16 @@ const HINT_COST = `-${HINT_PENALTY / 1000}s, ${STARS_WITH_HINT} stars max`;
  * Chrome only. It hugs the top and bottom edges inside the safe area so the
  * middle of the screen stays board.
  */
-export function Hud({ levelId, world, misses, running, hintUsed, onHint, onPause }: HudProps) {
+export function Hud({
+  levelId,
+  world,
+  misses,
+  running,
+  hintUsed,
+  leftHanded,
+  onHint,
+  onPause,
+}: HudProps) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -42,7 +53,12 @@ export function Hud({ levelId, world, misses, running, hintUsed, onHint, onPause
       </View>
 
       <View
-        style={[styles.row, styles.bottom, { paddingBottom: insets.bottom + space.md }]}
+        style={[
+          styles.row,
+          styles.bottom,
+          leftHanded && styles.mirrored,
+          { paddingBottom: insets.bottom + space.md },
+        ]}
         pointerEvents="box-none"
       >
         <Button
@@ -75,6 +91,7 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   bottom: { alignItems: 'flex-end' },
+  mirrored: { flexDirection: 'row-reverse' },
   world: { color: color.textMuted, fontFamily: font.body, fontSize: type.caption },
   level: { color: color.text, fontFamily: font.mono, fontSize: type.label },
   misses: { color: color.textMuted, fontFamily: font.mono, fontSize: type.label },

@@ -8,7 +8,6 @@
     "scheme": "haystack",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.dahbed55.haystack",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false

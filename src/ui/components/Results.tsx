@@ -13,9 +13,10 @@ interface ResultsProps {
   hintUsed: boolean;
   /** Best before this run, so the comparison is against what they had. */
   previousBest: number;
+  reducedMotion: boolean;
   onRetry: () => void;
   onNext: () => void;
-  onQuit: () => void;
+  onLevels: () => void;
 }
 
 export function Results({
@@ -25,9 +26,10 @@ export function Results({
   misses,
   hintUsed,
   previousBest,
+  reducedMotion,
   onRetry,
   onNext,
-  onQuit,
+  onLevels,
 }: ResultsProps) {
   const comparison = comparedToBest(milliseconds / 1000, previousBest);
   const costs = [
@@ -39,7 +41,7 @@ export function Results({
     <View style={styles.root}>
       <Text style={styles.title}>Found</Text>
       <Text style={styles.time}>{formatTime(milliseconds)}</Text>
-      <Stars earned={stars} />
+      <Stars earned={stars} stagger reducedMotion={reducedMotion} />
       {comparison ? <Text style={styles.detail}>{comparison}</Text> : null}
       {costs.length > 0 ? <Text style={styles.detail}>{costs.join(', ')}</Text> : null}
 
@@ -48,10 +50,10 @@ export function Results({
         {levelId < LAST_LEVEL ? (
           <Button label="Next" tone="primary" onPress={onNext} />
         ) : (
-          <Button label="Home" tone="primary" onPress={onQuit} />
+          <Button label="Levels" tone="primary" onPress={onLevels} />
         )}
       </View>
-      {levelId < LAST_LEVEL ? <Button label="Home" onPress={onQuit} /> : null}
+      {levelId < LAST_LEVEL ? <Button label="Levels" onPress={onLevels} /> : null}
     </View>
   );
 }

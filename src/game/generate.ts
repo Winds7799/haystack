@@ -25,7 +25,7 @@ const OCCLUSION_SAMPLES = 15;
 /** Placements tried before settling for the closest miss. */
 const PLACEMENT_TRIES = 48;
 
-function generateStraw(rng: Random, count: number): StrawField {
+function generateStraw(rng: Random, count: number, size: number): StrawField {
   const field: StrawField = {
     count,
     x: new Float32Array(count),
@@ -36,7 +36,7 @@ function generateStraw(rng: Random, count: number): StrawField {
     bow: new Float32Array(count),
     color: new Uint8Array(count),
   };
-  const span = WORLD_SIZE + WORLD_BLEED * 2;
+  const span = size + WORLD_BLEED * 2;
   for (let i = 0; i < count; i++) {
     field.x[i] = -WORLD_BLEED + rng() * span;
     field.y[i] = -WORLD_BLEED + rng() * span;
@@ -113,11 +113,17 @@ function measureOcclusion(straw: StrawField, object: BoardObject): number {
   return covered / OCCLUSION_SAMPLES;
 }
 
-function candidate(rng: Random, kind: ObjectKind): BoardObject {
+/** Margins and clearances are quoted for the full board, so small boards scale them. */
+function scaled(distance: number, size: number): number {
+  return distance * Math.min(1, size / WORLD_SIZE);
+}
+
+function candidate(rng: Random, kind: ObjectKind, size: number): BoardObject {
+  const margin = scaled(OBJECT_MARGIN, size);
   return {
     kind,
-    x: between(rng, OBJECT_MARGIN, WORLD_SIZE - OBJECT_MARGIN),
-    y: between(rng, OBJECT_MARGIN, WORLD_SIZE - OBJECT_MARGIN),
+    x: between(rng, margin, size - margin),
+    y: between(rng, margin, size - margin),
     angle: rng() * Math.PI * 2,
     scale: between(rng, 0.92, 1.08),
     depth: intBetween(rng, 1, DEPTH_SLICES - 1) / DEPTH_SLICES,
@@ -125,10 +131,15 @@ function candidate(rng: Random, kind: ObjectKind): BoardObject {
   };
 }
 
-function farEnough(object: BoardObject, placed: readonly BoardObject[], slack: number): boolean {
+function farEnough(
+  object: BoardObject,
+  placed: readonly BoardObject[],
+  slack: number,
+  size: number
+): boolean {
   for (const other of placed) {
     const gap = other.kind === 'needle' ? NEEDLE_CLEARANCE : DECOY_CLEARANCE;
-    const required = gap * slack;
+    const required = scaled(gap, size) * slack;
     const dx = other.x - object.x;
     const dy = other.y - object.y;
     if (dx * dx + dy * dy < required * required) {
@@ -143,16 +154,17 @@ function place(
   straw: StrawField,
   kind: ObjectKind,
   placed: readonly BoardObject[],
-  band: readonly [number, number]
+  band: readonly [number, number],
+  size: number
 ): BoardObject {
   const target = (band[0] + band[1]) / 2;
   let best: BoardObject | null = null;
   let bestMiss = Number.POSITIVE_INFINITY;
 
   for (let attempt = 0; attempt < PLACEMENT_TRIES; attempt++) {
-    const next = candidate(rng, kind);
+    const next = candidate(rng, kind, size);
     // Clearance relaxes as tries run out, so a crowded board still fills.
-    if (!farEnough(next, placed, attempt < PLACEMENT_TRIES / 2 ? 1 : 0.6)) {
+    if (!farEnough(next, placed, attempt < PLACEMENT_TRIES / 2 ? 1 : 0.6, size)) {
       continue;
     }
     next.occlusion = measureOcclusion(straw, next);
@@ -169,22 +181,27 @@ function place(
   if (best) {
     return best;
   }
-  const fallback = candidate(rng, kind);
+  const fallback = candidate(rng, kind, size);
   fallback.occlusion = measureOcclusion(straw, fallback);
   return fallback;
 }
 
-function placeObjects(rng: Random, config: LevelConfig, straw: StrawField): BoardObject[] {
+function placeObjects(
+  rng: Random,
+  config: LevelConfig,
+  straw: StrawField,
+  size: number
+): BoardObject[] {
   const placed: BoardObject[] = [];
   // Twin levels hide two, and both are held to the same occlusion band.
   for (let n = 0; n < needleCount(config); n++) {
-    placed.push(place(rng, straw, 'needle', placed, config.occlusion));
+    placed.push(place(rng, straw, 'needle', placed, config.occlusion, size));
   }
   // Decoys must be temptingly visible, so they never hide deeper than the needle.
   const decoyBand: readonly [number, number] = [0, config.occlusion[1]];
   for (const spec of config.decoys) {
     for (let n = 0; n < spec.count; n++) {
-      placed.push(place(rng, straw, spec.kind, placed, decoyBand));
+      placed.push(place(rng, straw, spec.kind, placed, decoyBand, size));
     }
   }
   return placed.sort((a, b) => a.depth - b.depth);
@@ -194,16 +211,18 @@ function placeObjects(rng: Random, config: LevelConfig, straw: StrawField): Boar
  * A retry gives a different board; replaying the same level at the same attempt
  * gives the same board back.
  */
-export function generateWorld(config: LevelConfig, attempt: number): World {
+export function generateWorld(config: LevelConfig, attempt: number, colourBlindSafe: boolean): World {
   const seed = seedFrom(config.id, attempt);
   const rng = mulberry32(seed);
-  const straw = generateStraw(rng, config.strawCount);
+  const size = config.worldSize ?? WORLD_SIZE;
+  const straw = generateStraw(rng, config.strawCount, size);
   return {
     seed,
-    size: WORLD_SIZE,
+    size,
     straw,
-    objects: placeObjects(rng, config, straw),
+    objects: placeObjects(rng, config, straw, size),
     ground: groundFor(config),
     similarity: config.similarity,
+    colourBlindSafe,
   };
 }

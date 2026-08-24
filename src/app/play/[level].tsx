@@ -1,97 +1,64 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { AppState, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
+import { startAmbience, stopAmbience } from '@/audio';
 import { Board } from '@/game/Board';
 import { MAX_ZOOM } from '@/game/constants';
-import { FIRST_LEVEL, findLevel } from '@/game/difficulty';
-import { missMessage, progressMessage } from '@/game/copy';
-import { missBuzz, tapBuzz, winBuzz } from '@/game/feedback';
-import { findNeedles, hintHalo, hitTest, rotateAbout, unrotate } from '@/game/hit';
-import { starsFor } from '@/game/scoring';
-import type { BoardObject, Point } from '@/game/types';
+import { FIRST_LEVEL, findLevel, type Modifier } from '@/game/difficulty';
+import { panFeedback } from '@/game/feedback';
+import { findNeedles, rotateAbout } from '@/game/hit';
 import { useBoard } from '@/game/useBoard';
 import { useCamera } from '@/game/useCamera';
 import { useDrift } from '@/game/useDrift';
+import { useLevelRun } from '@/game/useLevelRun';
 import type { Viewport } from '@/game/camera';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
-import { HINT_DURATION, elapsedOf, useRun } from '@/state/useRun';
-import { Button } from '@/ui/components/Button';
+import { useRun } from '@/state/useRun';
 import { Hud } from '@/ui/components/Hud';
 import { Message } from '@/ui/components/Message';
 import { PauseSheet } from '@/ui/components/PauseSheet';
 import { Results } from '@/ui/components/Results';
 import { Toast } from '@/ui/components/Toast';
-import { color, space } from '@/ui/tokens';
+import { color } from '@/ui/tokens';
 
-/** How long the found-it moment is held before the result appears. */
-const CELEBRATION = 700;
+const MODIFIERS: readonly (Modifier | 'none')[] = ['none', 'drift', 'lantern', 'haze', 'twin'];
 
-interface Finish {
-  milliseconds: number;
-  stars: number;
-  misses: number;
-  hintUsed: boolean;
-  previousBest: number;
+function readModifier(value: string | undefined): Modifier | 'none' | undefined {
+  return MODIFIERS.find((entry) => entry === value);
 }
 
 export default function PlayScreen() {
   useKeepAwake();
-  const params = useLocalSearchParams<{ level?: string }>();
+  const params = useLocalSearchParams<{ level?: string; modifier?: string }>();
   const levelId = Number.parseInt(params.level ?? '', 10);
-  const config = findLevel(levelId);
+  const listed = findLevel(levelId);
+  // The debug menu can force a modifier on any level. Development builds only.
+  const override = __DEV__ ? readModifier(params.modifier) : undefined;
+  const config =
+    listed && override !== undefined
+      ? { ...listed, modifier: override === 'none' ? undefined : override }
+      : listed;
 
   const [attempt, setAttempt] = useState(
     () => recordFor(useProgress.getState().records, levelId).attempts + 1
   );
-  const board = useBoard(levelId, attempt);
+  const settings = useProgress((state) => state.settings);
+  const board = useBoard(levelId, attempt, settings.colourBlindSafe, override);
   const status = useRun((state) => state.status);
   const misses = useRun((state) => state.misses);
   const hintUsed = useRun((state) => state.hintUsed);
   const lastMiss = useRun((state) => state.lastMiss);
   const found = useRun((state) => state.found);
-  const preferReducedMotion = useProgress((state) => state.settings.reducedMotion);
-  const systemReducedMotion = useReducedMotion();
-  const reducedMotion = preferReducedMotion || systemReducedMotion;
+  const reducedMotion = settings.reducedMotion || useReducedMotion();
 
   const [viewport, setViewport] = useState<Viewport>({ width: 1, height: 1 });
-  const [hint, setHint] = useState<{ centre: Point; radius: number } | null>(null);
-  const [finish, setFinish] = useState<Finish | null>(null);
-  const [celebrating, setCelebrating] = useState(false);
-  const [target, setTarget] = useState<BoardObject | null>(null);
-  const [toast, setToast] = useState<{ text: string; serial: number } | null>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const later = useCallback((run: () => void, delay: number) => {
-    timers.current.push(setTimeout(run, delay));
-  }, []);
-  const say = useCallback(
-    (text: string) => setToast((current) => ({ text, serial: (current?.serial ?? 0) + 1 })),
-    []
-  );
-
-  useEffect(
-    () => () => {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-    },
-    []
-  );
-
-  // A new board is a new run.
   useEffect(() => {
-    if (board.status !== 'ready') {
-      return;
-    }
-    useProgress.getState().beginAttempt(levelId);
-    useRun.getState().begin(levelId, attempt);
-    setHint(null);
-    setFinish(null);
-    setCelebrating(false);
-    setTarget(null);
-    setToast(null);
-  }, [board.status, levelId, attempt]);
+    startAmbience();
+    return stopAmbience;
+  }, []);
 
   // The clock never runs while the app is in the background.
   useEffect(() => {
@@ -111,62 +78,14 @@ export default function PlayScreen() {
     [world, found]
   );
   const drift = useDrift(config?.modifier === 'drift', reducedMotion, status !== 'playing');
-
-  const onTap = useCallback(
-    (point: Point) => {
-      const state = useRun.getState();
-      if (!world || !config || state.status !== 'playing') {
-        return;
-      }
-      const struck = hitTest(world, unrotate(point, drift.angle.value, world.size));
-      if (struck?.kind !== 'needle') {
-        missBuzz();
-        state.miss(struck?.kind ?? null);
-        say(missMessage(struck?.kind ?? null));
-        return;
-      }
-
-      const index = world.objects.indexOf(struck);
-      if (state.found.includes(index)) {
-        return;
-      }
-      if (state.found.length + 1 < needles.length) {
-        tapBuzz();
-        state.markFound(index);
-        say(progressMessage(state.found.length + 1, needles.length));
-        return;
-      }
-
-      const milliseconds = elapsedOf(state);
-      const previousBest = recordFor(useProgress.getState().records, levelId).bestTime;
-      const stars = starsFor(config, milliseconds / 1000, state.hintUsed);
-      winBuzz();
-      state.markFound(index);
-      state.win();
-      setHint(null);
-      setTarget(struck);
-      setCelebrating(true);
-      useProgress.getState().recordFinish(levelId, milliseconds / 1000, stars);
-      later(
-        () =>
-          setFinish({
-            milliseconds,
-            stars,
-            misses: state.misses,
-            hintUsed: state.hintUsed,
-            previousBest,
-          }),
-        CELEBRATION
-      );
-    },
-    [world, config, needles.length, levelId, later, say, drift]
-  );
+  const run = useLevelRun(config, world, needles, drift, levelId, attempt);
 
   const camera = useCamera(
     viewport,
     world?.size ?? 1,
-    onTap,
-    !celebrating && finish === null && status !== 'paused'
+    run.onTap,
+    panFeedback,
+    !run.celebrating && run.finish === null && status !== 'paused'
   );
   const { focusOn } = camera;
 
@@ -179,54 +98,36 @@ export default function PlayScreen() {
 
   // Frame the needle once it is found, where the drifting pile actually put it.
   useEffect(() => {
-    if (!celebrating || !target || !world) {
+    if (!run.celebrating || !run.target || !world) {
       return;
     }
-    focusOn(rotateAbout(target, drift.angle.value, world.size), MAX_ZOOM, !reducedMotion);
-  }, [celebrating, target, world, focusOn, reducedMotion, drift]);
-
-  const onHint = useCallback(() => {
-    const state = useRun.getState();
-    if (!world || state.hintUsed || state.status !== 'playing') {
-      return;
-    }
-    const pending = needles.find((needle) => !state.found.includes(world.objects.indexOf(needle)));
-    if (!pending) {
-      return;
-    }
-    state.takeHint();
-    setHint(hintHalo(world, pending));
-    later(() => setHint(null), HINT_DURATION);
-  }, [world, needles, later]);
+    focusOn(rotateAbout(run.target, drift.angle.value, world.size), MAX_ZOOM, !reducedMotion);
+  }, [run.celebrating, run.target, world, focusOn, reducedMotion, drift]);
 
   const onRestart = useCallback(() => setAttempt((current) => current + 1), []);
   const onQuit = useCallback(() => router.replace('/'), []);
+  const onLevels = useCallback(() => router.replace('/levels'), []);
   const onNext = useCallback(() => router.replace(`/play/${levelId + 1}`), [levelId]);
   const onPause = useCallback(() => useRun.getState().pause(), []);
   const onResume = useCallback(() => useRun.getState().resume(), []);
 
   if (!config) {
     return (
-      <View style={styles.root}>
-        <Message title="This level does not exist" detail={`There is no level ${params.level}.`} />
-        <View style={styles.escape}>
-          <Button label="Home" tone="primary" onPress={onQuit} />
-        </View>
-      </View>
+      <Message
+        title="This level does not exist"
+        detail={`There is no level ${params.level}.`}
+        action={{ label: 'Home', onPress: onQuit }}
+      />
     );
   }
 
   if (!isUnlocked(useProgress.getState().records, levelId, FIRST_LEVEL)) {
     return (
-      <View style={styles.root}>
-        <Message
-          title="Locked"
-          detail={`Finish level ${levelId - 1} to open this one. Four tries at it will also do.`}
-        />
-        <View style={styles.escape}>
-          <Button label="Home" tone="primary" onPress={onQuit} />
-        </View>
-      </View>
+      <Message
+        title="Locked"
+        detail={`Finish level ${levelId - 1} to open this one. Four tries at it will also do.`}
+        action={{ label: 'Home', onPress: onQuit }}
+      />
     );
   }
 
@@ -234,7 +135,11 @@ export default function PlayScreen() {
     <View style={styles.root} onLayout={onLayout}>
       {board.status === 'loading' ? <Message title="Building the pile" busy /> : null}
       {board.status === 'error' ? (
-        <Message title="This board could not be built" detail={board.message} />
+        <Message
+          title="This board could not be built"
+          detail={board.message}
+          action={{ label: 'Retry', onPress: onRestart }}
+        />
       ) : null}
 
       {ready && needles.length > 0 ? (
@@ -245,26 +150,27 @@ export default function PlayScreen() {
             camera={camera}
             drift={drift}
             viewport={viewport}
-            needle={target ?? needles[0]}
+            needle={run.target ?? needles[0]}
             modifier={config.modifier}
-            hint={hint}
+            hint={run.hint}
             found={foundPoints}
             missSerial={lastMiss?.serial ?? 0}
-            celebrating={celebrating}
+            celebrating={run.celebrating}
             reducedMotion={reducedMotion}
           />
-          {finish ? null : (
+          {run.finish ? null : (
             <Hud
               levelId={levelId}
               world={config.world.name}
               misses={misses}
               running={status === 'playing'}
               hintUsed={hintUsed}
-              onHint={onHint}
+              leftHanded={settings.leftHanded}
+              onHint={run.onHint}
               onPause={onPause}
             />
           )}
-          <Toast message={toast?.text ?? null} serial={toast?.serial ?? 0} />
+          <Toast message={run.toast?.text ?? null} serial={run.toast?.serial ?? 0} />
           {status === 'paused' ? (
             <PauseSheet
               levelId={levelId}
@@ -273,17 +179,18 @@ export default function PlayScreen() {
               onQuit={onQuit}
             />
           ) : null}
-          {finish ? (
+          {run.finish ? (
             <Results
               levelId={levelId}
-              milliseconds={finish.milliseconds}
-              stars={finish.stars}
-              misses={finish.misses}
-              hintUsed={finish.hintUsed}
-              previousBest={finish.previousBest}
+              milliseconds={run.finish.milliseconds}
+              stars={run.finish.stars}
+              misses={run.finish.misses}
+              hintUsed={run.finish.hintUsed}
+              previousBest={run.finish.previousBest}
+              reducedMotion={reducedMotion}
               onRetry={onRestart}
               onNext={onNext}
-              onQuit={onQuit}
+              onLevels={onLevels}
             />
           ) : null}
         </>
@@ -294,5 +201,4 @@ export default function PlayScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.ink },
-  escape: { alignItems: 'center', paddingBottom: space.xxxl },
 });

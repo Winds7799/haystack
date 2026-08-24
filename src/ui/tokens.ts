@@ -81,11 +81,14 @@ export const type = {
 } as const;
 
 export const font = {
-  /** Display type. Phase 4 replaces these with bundled faces. */
-  display: Platform.select({ ios: 'Georgia', default: 'serif' }),
+  /** An old-style serif, for the wordmark and every heading. */
+  display: 'EBGaramond_500Medium',
+  displayPlain: 'EBGaramond_400Regular',
+  /** Body copy stays on the system face: it scales and hyphenates best. */
   body: Platform.select({ ios: 'System', default: 'sans-serif' }),
-  /** Anything numeric, so digits do not jitter as they change. */
-  mono: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+  /** Anything numeric, so digits never jitter as they change. */
+  mono: 'IBMPlexMono_400Regular',
+  monoMedium: 'IBMPlexMono_500Medium',
 } as const;
 
 export const layout = {

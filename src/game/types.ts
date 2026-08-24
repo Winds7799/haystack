@@ -74,4 +74,6 @@ export interface World {
   ground: Ground;
   /** How close this level's decoys are drawn to a needle. */
   similarity: number;
+  /** Decoys drawn with shape emphasis instead of relying on colour alone. */
+  colourBlindSafe: boolean;
 }

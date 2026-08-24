@@ -46,6 +46,7 @@ export function useCamera(
   viewport: Viewport,
   worldSize: number,
   onTap: (point: Point) => void,
+  onPanStart: () => void,
   interactive: boolean
 ): Camera {
   const zoom = useSharedValue(1);
@@ -68,6 +69,11 @@ export function useCamera(
   }, [onTap]);
   // Stable across renders, so changing the handler never rebuilds the gestures.
   const handleTap = useCallback((point: Point) => tapRef.current(point), []);
+  const panRef = useRef(onPanStart);
+  useEffect(() => {
+    panRef.current = onPanStart;
+  }, [onPanStart]);
+  const handlePanStart = useCallback(() => panRef.current(), []);
 
   useEffect(() => {
     // A new viewport means a new fit, so frame the whole board again.
@@ -88,6 +94,7 @@ export function useCamera(
         cancelAnimation(offsetY);
         startX.value = offsetX.value;
         startY.value = offsetY.value;
+        runOnJS(handlePanStart)();
       })
       .onUpdate((event) => {
         touchX.value = event.x;
@@ -171,6 +178,7 @@ export function useCamera(
     return Gesture.Race(tap, Gesture.Simultaneous(pan, pinch));
   }, [
     handleTap,
+    handlePanStart,
     interactive,
     width,
     height,

@@ -1,0 +1,97 @@
+import { useCallback, useState } from 'react';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { useProgress } from '@/state/useProgress';
+import { Button } from '@/ui/components/Button';
+import { Screen } from '@/ui/components/Screen';
+import { Toggle } from '@/ui/components/Toggle';
+import { color, font, space, type } from '@/ui/tokens';
+
+export default function SettingsScreen() {
+  const settings = useProgress((state) => state.settings);
+  const set = useProgress((state) => state.set);
+  const reset = useProgress((state) => state.reset);
+  const [confirming, setConfirming] = useState(false);
+
+  const onReset = useCallback(() => {
+    reset();
+    setConfirming(false);
+  }, [reset]);
+
+  return (
+    <Screen title="Settings" onBack={() => router.back()}>
+      <View style={styles.group}>
+        <Toggle
+          label="Sound"
+          detail="Barn atmosphere, straw, and the tone on a find."
+          value={settings.sound}
+          onChange={(value) => set('sound', value)}
+        />
+        <Toggle
+          label="Haptics"
+          value={settings.haptics}
+          onChange={(value) => set('haptics', value)}
+        />
+        <Toggle
+          label="Reduced motion"
+          detail="Stops the drift, the pan momentum, and the flourish on a find."
+          value={settings.reducedMotion}
+          onChange={(value) => set('reducedMotion', value)}
+        />
+        <Toggle
+          label="Left-handed layout"
+          detail="Moves hint and pause to the other side."
+          value={settings.leftHanded}
+          onChange={(value) => set('leftHanded', value)}
+        />
+        <Toggle
+          label="Colour-blind-safe decoys"
+          detail="Decoys keep their own thickness and their heads and legs grow, so they differ by shape and not only by colour."
+          value={settings.colourBlindSafe}
+          onChange={(value) => set('colourBlindSafe', value)}
+        />
+      </View>
+
+      <View style={styles.group}>
+        <Button label="How to play" onPress={() => router.push('/how-to-play')} style={styles.wide} />
+        {__DEV__ ? (
+          <Button label="Debug" onPress={() => router.push('/debug')} style={styles.wide} />
+        ) : null}
+      </View>
+
+      <View style={styles.group}>
+        {confirming ? (
+          <>
+            <Text style={styles.warning}>
+              This clears every best time and star, and locks the levels again.
+            </Text>
+            <View style={styles.row}>
+              <Button label="Reset progress" tone="primary" onPress={onReset} />
+              <Button label="Keep it" onPress={() => setConfirming(false)} />
+            </View>
+          </>
+        ) : (
+          <Button
+            label="Reset progress"
+            onPress={() => setConfirming(true)}
+            style={styles.wide}
+          />
+        )}
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  group: {
+    marginBottom: space.xl,
+    gap: space.sm,
+  },
+  row: { flexDirection: 'row', gap: space.md },
+  wide: { alignSelf: 'stretch' },
+  warning: {
+    color: color.textMuted,
+    fontFamily: font.body,
+    fontSize: type.label,
+  },
+});

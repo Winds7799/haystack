@@ -35,8 +35,19 @@ export const DECOY_CLEARANCE = 96;
 /** Screen points per world unit at full magnification. */
 export const MAX_ZOOM = 1.25;
 
-/** Side of the square texture the board is rasterised into, in pixels. */
+/** Largest square texture a board is rasterised into, in pixels. */
 export const TEXTURE_SIZE = 2048;
+
+/**
+ * Pixels per world unit to aim for. The full board hits the cap long before
+ * this, which is why it is soft at full magnification; the small boards the
+ * tutorial uses come out crisp.
+ */
+const TEXTURE_DENSITY = 2.2;
+
+export function textureFor(worldSize: number): number {
+  return Math.min(TEXTURE_SIZE, Math.max(512, Math.round(worldSize * TEXTURE_DENSITY)));
+}
 
 /** Nominal length along the local x axis, in world units. Tip points at +x. */
 export const OBJECT_LENGTH: Record<ObjectKind, number> = {

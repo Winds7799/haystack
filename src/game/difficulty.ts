@@ -44,6 +44,8 @@ export interface LevelConfig {
    */
   par: readonly [three: number, two: number];
   modifier?: Modifier;
+  /** Defaults to the full board. Only the tutorial uses a smaller one. */
+  worldSize?: number;
 }
 
 const decoy = (kind: DecoyKind, count: number): DecoySpec => ({ kind, count });

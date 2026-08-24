@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/eb-garamond": "^0.4.3",
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.15",
     "expo-audio": "~57.0.4",

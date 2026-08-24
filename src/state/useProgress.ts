@@ -11,17 +11,35 @@ export interface LevelRecord {
 }
 
 export interface Settings {
+  sound: boolean;
+  haptics: boolean;
   reducedMotion: boolean;
+  /** Mirrors the game chrome, so the hint and pause buttons fall under a left thumb. */
+  leftHanded: boolean;
+  /** Gives decoys shape emphasis rather than relying on colour alone. */
+  colourBlindSafe: boolean;
 }
+
+export const DEFAULT_SETTINGS: Settings = {
+  sound: true,
+  haptics: true,
+  reducedMotion: false,
+  leftHanded: false,
+  colourBlindSafe: false,
+};
 
 interface ProgressState {
   records: Record<number, LevelRecord>;
   settings: Settings;
+  /** Set once how-to-play has been seen, so it only opens itself once. */
+  seenTutorial: boolean;
   /** Reading from disk is asynchronous; until this is true, records are unknown. */
   hydrated: boolean;
   beginAttempt: (levelId: number) => void;
   recordFinish: (levelId: number, seconds: number, stars: number) => void;
-  setReducedMotion: (value: boolean) => void;
+  set: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+  markTutorialSeen: () => void;
+  reset: () => void;
 }
 
 const EMPTY: LevelRecord = { bestTime: Number.POSITIVE_INFINITY, bestStars: 0, attempts: 0 };
@@ -34,7 +52,8 @@ export const useProgress = create<ProgressState>()(
   persist(
     (set) => ({
       records: {},
-      settings: { reducedMotion: false },
+      settings: DEFAULT_SETTINGS,
+      seenTutorial: false,
       hydrated: false,
       beginAttempt: (levelId) =>
         set((state) => {
@@ -57,13 +76,14 @@ export const useProgress = create<ProgressState>()(
             },
           };
         }),
-      setReducedMotion: (value) =>
-        set((state) => ({ settings: { ...state.settings, reducedMotion: value } })),
+      set: (key, value) => set((state) => ({ settings: { ...state.settings, [key]: value } })),
+      markTutorialSeen: () => set({ seenTutorial: true }),
+      reset: () => set({ records: {} }),
     }),
     {
       name: 'progress',
       storage: createJSONStorage(() => deviceStorage),
-      partialize: ({ records, settings }) => ({ records, settings }) as Partial<ProgressState>,
+      partialize: ({ records, settings, seenTutorial }) => ({ records, settings, seenTutorial }) as Partial<ProgressState>,
       onRehydrateStorage: () => () => {
         useProgress.setState({ hydrated: true });
       },
