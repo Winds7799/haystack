@@ -7,7 +7,6 @@ import type { Transforms3d } from '@shopify/react-native-skia';
 import { BARN } from './worlds';
 import { generateWorld } from './generate';
 import { rasterizeWorld } from './render';
-import { textureFor } from './constants';
 
 /**
  * The pile behind the home screen. Decorative only: a small cheap board that
@@ -15,6 +14,12 @@ import { textureFor } from './constants';
  */
 
 const AMBIENT_SIZE = 900;
+/**
+ * Deliberately small. This board is decorative, sits at a third opacity and
+ * never stops moving, so detail here would only cost the home screen its
+ * first second.
+ */
+const AMBIENT_TEXTURE = 768;
 const SAMPLING = { filter: FilterMode.Linear, mipmap: MipmapMode.Linear } as const;
 /** One full turn every few minutes — slow enough to read as stillness. */
 const PERIOD = 240000;
@@ -52,7 +57,7 @@ export function AmbientBoard({
           1,
           false
         );
-        setTexture(rasterizeWorld(world, textureFor(AMBIENT_SIZE)));
+        setTexture(rasterizeWorld(world, AMBIENT_TEXTURE));
       } catch {
         // A missing backdrop is not worth blocking the home screen for.
       }

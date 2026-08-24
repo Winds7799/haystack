@@ -139,9 +139,12 @@ export function drawWorld(canvas: SkCanvas, world: World): void {
  * image blit per frame, however much straw the level asked for.
  */
 export function rasterizeWorld(world: World, textureSize: number): SkImage {
-  const surface =
-    Skia.Surface.MakeOffscreen(textureSize, textureSize) ??
-    Skia.Surface.Make(textureSize, textureSize);
+  // A CPU surface, deliberately. MakeOffscreen needs a GPU context, and the
+  // only thread that reliably has one is the UI thread — Skia's own offscreen
+  // helper is a worklet for exactly that reason. Generation runs here on the JS
+  // thread, and the board is wanted as a raster image either way, so a CPU
+  // surface is both the safe choice and the honest one.
+  const surface = Skia.Surface.Make(textureSize, textureSize);
   if (!surface) {
     throw new Error(`Could not allocate a ${textureSize}px board texture`);
   }
@@ -150,11 +153,5 @@ export function rasterizeWorld(world: World, textureSize: number): SkImage {
   canvas.scale(scale, scale);
   drawWorld(canvas, world);
   surface.flush();
-  // Detached from the drawing context, so the image is safe to hand to the
-  // canvas that renders each frame.
-  const image = surface.makeImageSnapshot().makeNonTextureImage();
-  if (!image) {
-    throw new Error('Could not read the board texture back from the GPU');
-  }
-  return image;
+  return surface.makeImageSnapshot();
 }
