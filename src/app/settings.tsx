@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { adsAvailable, openAdPrivacyOptions, usingTestAds } from '@/ads/rewarded';
 import { leaderboardReady } from '@/net/leaderboard';
 import { useIdentity } from '@/state/useIdentity';
 import { useProgress } from '@/state/useProgress';
@@ -66,6 +67,20 @@ export default function SettingsScreen() {
               name ? `Change your leaderboard name, currently ${name}` : 'Set your leaderboard name'
             }
             onPress={() => setRenaming(true)}
+            style={styles.wide}
+          />
+        </View>
+      ) : null}
+
+      {adsAvailable() ? (
+        <View style={styles.group}>
+          <Button
+            label="Ad privacy choices"
+            note={usingTestAds() ? 'test ads' : undefined}
+            accessibilityLabel="Change your advertising privacy choices"
+            onPress={() => {
+              void openAdPrivacyOptions();
+            }}
             style={styles.wide}
           />
         </View>

@@ -57,12 +57,16 @@
         "projectId": "7a29fe15-c41b-4b63-93d6-40da699ddc5b"
       },
       "supabaseUrl": "",
-      "supabaseAnonKey": ""
+      "supabaseAnonKey": "",
+      "ads": {
+        "iosRewardedUnitId": "",
+        "androidRewardedUnitId": ""
+      }
     },
     "owner": "dahbed55",
     "react-native-google-mobile-ads": {
-      "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-      "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+      "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+      "androidAppId": "ca-app-pub-3940256099942544~3347511713"
     }
   }
 }

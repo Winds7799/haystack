@@ -176,11 +176,43 @@ A hint dims the board and lights a quarter of it for a second and a half. It
 costs ten seconds, and taking any hint at all caps the level at two stars.
 Hints are not limited to one per level — each one costs another ad.
 
-The rewarded ad runs on `react-native-google-mobile-ads` with **Google's public
-test unit IDs**. It will show test ads to anyone until you replace them:
+### Going live, iOS first
 
-- `src/ads/rewarded.ts` — the ad unit
-- `app.json` under `react-native-google-mobile-ads` — the app IDs
+Ads are configured per platform, so iOS can earn while Android is still on
+test units. Until a platform has a real unit, it serves Google's samples and
+earns nothing — `usingTestAds()` reports this, and Settings shows a "test ads"
+note so it cannot ship unnoticed.
+
+In [AdMob](https://admob.google.com), create the app and a **rewarded** ad
+unit, then fill in two places:
+
+```jsonc
+// app.json
+"react-native-google-mobile-ads": {
+  "iosAppId": "ca-app-pub-XXXX~XXXX"      // the app
+},
+"extra": {
+  "ads": { "iosRewardedUnitId": "ca-app-pub-XXXX/XXXX" }   // the unit
+}
+```
+
+The app ID is native and needs a rebuild. The unit ID is read at runtime.
+Android gets the same two fields when you are ready for it.
+
+**Consent.** `AdsConsent.gatherConsent()` runs once, lazily, before the first
+ad — a player who never asks for a hint never sees a consent form. Serving
+personalised ads in the EU or UK without this breaches Google's policy and
+they will stop filling. Settings carries an "Ad privacy choices" entry, which
+the same rules require.
+
+**Tracking.** There is deliberately no App Tracking Transparency prompt, so
+first launch still asks for nothing. That means non-personalised ads on iOS,
+which earn less. To change it, set `userTrackingUsageDescription` in the
+plugin config and request ATT before the first ad.
+
+**Before submitting:** ads mean the App Store privacy questionnaire has to
+declare identifiers and usage data. That is a form, not code, but the app will
+be rejected without it.
 
 The ad module is loaded lazily inside a try/catch. On a build made before this
 dependency existed, or with no network, `adsAvailable()` is false and a hint is
