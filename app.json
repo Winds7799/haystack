@@ -59,13 +59,13 @@
       "supabaseUrl": "",
       "supabaseAnonKey": "",
       "ads": {
-        "iosRewardedUnitId": "",
+        "iosRewardedUnitId": "ca-app-pub-4515907710016956/8871515160",
         "androidRewardedUnitId": ""
       }
     },
     "owner": "dahbed55",
     "react-native-google-mobile-ads": {
-      "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+      "iosAppId": "ca-app-pub-4515907710016956~2931019279",
       "androidAppId": "ca-app-pub-3940256099942544~3347511713"
     }
   }
