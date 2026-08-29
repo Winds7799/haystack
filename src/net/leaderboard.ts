@@ -53,7 +53,10 @@ async function call(path: string, init: RequestInit): Promise<Response> {
       signal: controller.signal,
       headers: {
         apikey: config.key,
-        Authorization: `Bearer ${config.key}`,
+        // Legacy anon keys are JWTs and PostgREST expects them as a bearer
+        // token too. The newer sb_publishable_ keys are not, and sending one
+        // that way makes the request fail to parse.
+        ...(config.key.startsWith('eyJ') ? { Authorization: `Bearer ${config.key}` } : {}),
         'Content-Type': 'application/json',
         ...init.headers,
       },

@@ -7,9 +7,9 @@
  * ships — see PUBLISHER.
  */
 
-/** Fill these in. The App Store will ask for the same contact details. */
+/** Publisher details. The App Store will ask for the same. */
 export const PUBLISHER = {
-  name: 'the developer of Haystack',
+  name: 'Winds',
   /** A support address you are happy to publish. Required for the App Store. */
   contact: 'farifff17@gmail.com',
   /** Where you are, which decides whose law governs the terms. */
