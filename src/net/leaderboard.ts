@@ -18,8 +18,6 @@ export interface Score {
 
 export interface Standing extends Score {
   rank: number;
-  /** True for the row belonging to this device. */
-  mine: boolean;
 }
 
 interface Config {
@@ -78,17 +76,22 @@ async function describe(response: Response): Promise<string> {
   }
 }
 
-/** The fastest times on one level, best first. */
-export async function fetchBoard(level: number, player: string, limit = 50): Promise<Standing[]> {
+/**
+ * The fastest times on one level, best first.
+ *
+ * Deliberately does not select `player`. That id is the only thing standing
+ * between a row and anyone who wants to overwrite it, so it never leaves the
+ * device that owns it. Your own standing comes from `fetchMine` instead.
+ */
+export async function fetchBoard(level: number, limit = 50): Promise<Standing[]> {
   const query = new URLSearchParams({
-    select: 'player,name,seconds,stars,hint_used',
+    select: 'name,seconds,stars,hint_used',
     level: `eq.${level}`,
     order: 'seconds.asc',
     limit: String(limit),
   });
   const response = await call(`scores?${query}`, { method: 'GET' });
   const rows = (await response.json()) as {
-    player: string;
     name: string;
     seconds: string | number;
     stars: number;
@@ -101,8 +104,45 @@ export async function fetchBoard(level: number, player: string, limit = 50): Pro
     seconds: Number(row.seconds),
     stars: row.stars,
     hintUsed: row.hint_used,
-    mine: row.player === player,
   }));
+}
+
+/** This device's own entry on a level, if it has posted one. */
+export async function fetchMine(level: number, player: string): Promise<Score | null> {
+  const query = new URLSearchParams({
+    select: 'name,seconds,stars,hint_used',
+    level: `eq.${level}`,
+    player: `eq.${player}`,
+    limit: '1',
+  });
+  const response = await call(`scores?${query}`, { method: 'GET' });
+  const rows = (await response.json()) as {
+    name: string;
+    seconds: string | number;
+    stars: number;
+    hint_used: boolean;
+  }[];
+  const row = rows[0];
+  return row
+    ? { name: row.name, level, seconds: Number(row.seconds), stars: row.stars, hintUsed: row.hint_used }
+    : null;
+}
+
+/** Erases everything this device has posted. Required, not a courtesy. */
+export async function deleteMyScores(player: string): Promise<void> {
+  await call(`scores?player=eq.${encodeURIComponent(player)}`, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=minimal' },
+  });
+}
+
+/** Flags a display name for review. */
+export async function reportName(name: string, level: number, reason: string): Promise<void> {
+  await call('reports', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify([{ reported_name: name, level, reason }]),
+  });
 }
 
 /** How many players are faster than a given time on a level. */

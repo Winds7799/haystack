@@ -100,6 +100,20 @@ drop trigger if exists scores_check on public.scores;
 create trigger scores_check before insert or update on public.scores
   for each row execute function public.check_score();
 
+-- Reported display names, for the moderation duty that comes with letting
+-- players type their own. Write-only from the app: nobody reads this but you.
+create table if not exists public.reports (
+  id             uuid primary key default gen_random_uuid(),
+  reported_name  text not null,
+  level          int,
+  reason         text,
+  created_at     timestamptz not null default now()
+);
+
+alter table public.reports enable row level security;
+drop policy if exists reports_insertable on public.reports;
+create policy reports_insertable on public.reports for insert with check (true);
+
 alter table public.scores      enable row level security;
 alter table public.level_bounds enable row level security;
 
@@ -113,6 +127,11 @@ create policy scores_insertable on public.scores for insert with check (true);
 drop policy if exists scores_improvable on public.scores;
 create policy scores_improvable on public.scores for update
   using (true) with check (true);
+
+-- Erasing your own entry. The player id is unguessable and never leaves the
+-- device that owns it, so knowing one is the proof of owning it.
+drop policy if exists scores_erasable on public.scores;
+create policy scores_erasable on public.scores for delete using (true);
 
 drop policy if exists bounds_readable on public.level_bounds;
 create policy bounds_readable on public.level_bounds for select using (true);

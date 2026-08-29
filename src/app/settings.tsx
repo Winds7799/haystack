@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { adsAvailable, openAdPrivacyOptions, usingTestAds } from '@/ads/rewarded';
-import { leaderboardReady } from '@/net/leaderboard';
+import { deleteMyScores, leaderboardReady } from '@/net/leaderboard';
 import { useIdentity } from '@/state/useIdentity';
 import { useProgress } from '@/state/useProgress';
 import { Button } from '@/ui/components/Button';
@@ -17,6 +17,8 @@ export default function SettingsScreen() {
   const reset = useProgress((state) => state.reset);
   const [confirming, setConfirming] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [erasing, setErasing] = useState(false);
+  const [erased, setErased] = useState(false);
   const name = useIdentity((state) => state.name);
 
   const onReset = useCallback(() => {
@@ -69,6 +71,20 @@ export default function SettingsScreen() {
             onPress={() => setRenaming(true)}
             style={styles.wide}
           />
+          <Button
+            label={erased ? 'Leaderboard entry removed' : 'Remove my leaderboard entry'}
+            note={erasing ? 'removing' : undefined}
+            disabled={erasing || erased}
+            accessibilityLabel="Remove every time this device has posted to the leaderboard"
+            onPress={() => {
+              setErasing(true);
+              deleteMyScores(useIdentity.getState().playerId)
+                .then(() => setErased(true))
+                .catch(() => undefined)
+                .finally(() => setErasing(false));
+            }}
+            style={styles.wide}
+          />
         </View>
       ) : null}
 
@@ -88,6 +104,11 @@ export default function SettingsScreen() {
 
       <View style={styles.group}>
         <Button label="How to play" onPress={() => router.push('/how-to-play')} style={styles.wide} />
+        <Button
+          label="Privacy and terms"
+          onPress={() => router.push('/legal')}
+          style={styles.wide}
+        />
         {__DEV__ ? (
           <Button label="Debug" onPress={() => router.push('/debug')} style={styles.wide} />
         ) : null}

@@ -4,7 +4,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FIRST_LEVEL, LAST_LEVEL, LEVELS } from '@/game/difficulty';
 import { tapFeedback } from '@/game/feedback';
 import { formatTime } from '@/game/scoring';
-import { fetchBoard, leaderboardReady, type Standing } from '@/net/leaderboard';
+import {
+  fetchBoard,
+  fetchMine,
+  leaderboardReady,
+  reportName,
+  type Score,
+  type Standing,
+} from '@/net/leaderboard';
 import { useIdentity } from '@/state/useIdentity';
 import { Message } from '@/ui/components/Message';
 import { Screen } from '@/ui/components/Screen';
@@ -24,13 +31,23 @@ export default function LeaderboardScreen() {
       : FIRST_LEVEL
   );
   const [board, setBoard] = useState<Board>({ status: 'loading' });
+  const [mine, setMine] = useState<Score | null>(null);
+  const [reported, setReported] = useState<string | null>(null);
   const playerId = useIdentity((state) => state.playerId);
 
   const load = useCallback(
     (target: number) => {
       let cancelled = false;
       setBoard({ status: 'loading' });
-      fetchBoard(target, playerId)
+      setMine(null);
+      fetchMine(target, playerId)
+        .then((own) => {
+          if (!cancelled) {
+            setMine(own);
+          }
+        })
+        .catch(() => undefined);
+      fetchBoard(target)
         .then((rows) => {
           if (!cancelled) {
             setBoard({ status: 'ready', rows });
@@ -111,7 +128,19 @@ export default function LeaderboardScreen() {
       {board.status === 'ready' && board.rows.length > 0 ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {board.rows.map((row) => (
-            <Row key={`${row.rank}-${row.name}`} standing={row} />
+            <Row
+              key={`${row.rank}-${row.name}`}
+              standing={row}
+              mine={mine !== null && row.name === mine.name && row.seconds === mine.seconds}
+              reported={reported === row.name}
+              onReport={() => {
+                tapFeedback();
+                setReported(row.name);
+                void reportName(row.name, level, 'reported from the leaderboard').catch(
+                  () => undefined
+                );
+              }}
+            />
           ))}
         </ScrollView>
       ) : null}
@@ -119,10 +148,20 @@ export default function LeaderboardScreen() {
   );
 }
 
-function Row({ standing }: { standing: Standing }) {
+function Row({
+  standing,
+  mine,
+  reported,
+  onReport,
+}: {
+  standing: Standing;
+  mine: boolean;
+  reported: boolean;
+  onReport: () => void;
+}) {
   return (
     <View
-      style={[styles.row, standing.mine && styles.mine]}
+      style={[styles.row, mine && styles.mine]}
       accessibilityRole="text"
       accessibilityLabel={`${standing.rank}. ${standing.name}, ${formatTime(standing.seconds * 1000)}${standing.hintUsed ? ', used a hint' : ''}`}
     >
@@ -132,6 +171,17 @@ function Row({ standing }: { standing: Standing }) {
       </Text>
       {standing.hintUsed ? <Text style={styles.hint}>hint</Text> : null}
       <Text style={styles.time}>{formatTime(standing.seconds * 1000)}</Text>
+      {mine ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={reported ? `${standing.name} reported` : `Report the name ${standing.name}`}
+          disabled={reported}
+          onPress={onReport}
+          hitSlop={space.sm}
+        >
+          <Text style={styles.report}>{reported ? 'reported' : 'report'}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -173,4 +223,5 @@ const styles = StyleSheet.create({
   name: { flex: 1, color: color.text, fontFamily: font.body, fontSize: type.body },
   hint: { color: color.goldDim, fontFamily: font.body, fontSize: type.caption },
   time: { color: color.gold, fontFamily: font.monoMedium, fontSize: type.body },
+  report: { color: color.textMuted, fontFamily: font.body, fontSize: type.caption },
 });

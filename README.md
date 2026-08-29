@@ -220,3 +220,39 @@ simply granted. Nobody loses a hint to an outage.
 
 **This requires a new native build.** `npx expo start` alone will not pick up
 the ad SDK.
+
+## Legal
+
+`src/legal/documents.ts` holds the privacy policy and terms as data; `/legal`
+renders them and Settings links to it. They describe what the app actually
+does, in plain language.
+
+**They are not finished.** Three placeholders in `PUBLISHER` have to be filled
+in before submitting:
+
+- `contact` — a support address you are willing to publish. Apple requires
+  one, and the privacy policy and the report duty both point at it.
+- `jurisdiction` — whose law governs the terms.
+- `LAST_UPDATED` — bump it whenever the wording changes.
+
+`legalIncomplete()` reports whether they are still placeholders, and the legal
+screen shows a warning about it in development builds.
+
+None of this is legal advice. The text is accurate about the app's behaviour,
+which is the hard part, but have someone qualified read it before you ship.
+
+### Why each piece exists
+
+| Requirement | Where |
+| --- | --- |
+| Privacy policy, in app and as a URL | `/legal`, and you must also paste a hosted copy into App Store Connect |
+| Objectionable content, zero tolerance | Terms, "Names on the leaderboard" |
+| A way to report content | Report control on every leaderboard row, writing to `public.reports` |
+| A way to erase your data | Settings, "Remove my leaderboard entry" |
+| Ad consent, EU and UK | `AdsConsent.gatherConsent()`, plus Settings, "Ad privacy choices" |
+
+Apple expects reports acted on **within 24 hours**. `public.reports` is
+write-only from the app — read it from the Supabase dashboard.
+
+**You still need a hosted privacy policy URL.** App Store Connect asks for a
+link, not a screen. Publishing the same text on any static page satisfies it.

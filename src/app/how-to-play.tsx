@@ -98,6 +98,10 @@ export default function HowToPlayScreen() {
         />
         <Button label="Skip" onPress={finish} />
       </View>
+
+      <Text style={styles.legal} onPress={() => router.push('/legal')}>
+        By playing you accept the terms. Tap to read them.
+      </Text>
     </View>
   );
 }
@@ -122,4 +126,11 @@ const styles = StyleSheet.create({
   nudge: { color: color.gold, fontFamily: font.body, fontSize: type.label, textAlign: 'center' },
   nudgeHidden: { opacity: 0 },
   actions: { flexDirection: 'row', gap: space.md },
+  legal: {
+    color: color.textMuted,
+    fontFamily: font.body,
+    fontSize: type.caption,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
 });
