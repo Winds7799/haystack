@@ -11,9 +11,9 @@
 export const PUBLISHER = {
   name: 'the developer of Haystack',
   /** A support address you are happy to publish. Required for the App Store. */
-  contact: 'REPLACE WITH YOUR SUPPORT EMAIL',
+  contact: 'farifff17@gmail.com',
   /** Where you are, which decides whose law governs the terms. */
-  jurisdiction: 'REPLACE WITH YOUR COUNTRY OR STATE',
+  jurisdiction: 'New York, United States',
 } as const;
 
 /** True while the placeholders are still placeholders. */

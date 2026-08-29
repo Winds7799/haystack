@@ -256,3 +256,25 @@ write-only from the app — read it from the Supabase dashboard.
 
 **You still need a hosted privacy policy URL.** App Store Connect asks for a
 link, not a screen. Publishing the same text on any static page satisfies it.
+
+### The hosted copy
+
+App Store Connect wants a privacy policy **URL**, not a screen. `docs/` holds
+static pages generated from the same `src/legal/documents.ts` the app renders,
+so the two can never disagree.
+
+```bash
+node tools/make-legal.mjs   # rebuild docs/ after editing the wording
+```
+
+To publish them on GitHub Pages:
+
+1. Create a repository and push this project to it.
+2. **Settings → Pages → Source:** Deploy from a branch, branch `main`, folder
+   `/docs`.
+3. A minute later the policy is at
+   `https://<user>.github.io/<repo>/privacy.html`. Paste that into App Store
+   Connect.
+
+The generator refuses to run while `PUBLISHER` still holds placeholders, so a
+policy with `REPLACE ME` in it cannot reach the web by accident.
