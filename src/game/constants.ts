@@ -53,6 +53,16 @@ export const DECOY_CLEARANCE = 96;
 /** Screen points per world unit at full magnification. */
 export const MAX_ZOOM = 1.25;
 
+/**
+ * How much larger than the screen the board is at minimum zoom.
+ *
+ * Exactly covering the screen sounds right and feels broken: the pan bounds
+ * collapse to a single point on whichever axis matches, and the board simply
+ * refuses to move. A little headroom means there is always somewhere to pan on
+ * both axes, and still never an edge in view.
+ */
+export const MIN_ZOOM_SLACK = 1.18;
+
 /** Pixels a board texture may use, however that board is shaped. */
 export const TEXTURE_BUDGET = 2048 * 2048;
 

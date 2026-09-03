@@ -7,11 +7,10 @@ import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { prepareAudio, setSoundEnabled } from '@/audio';
 import { useProgress } from '@/state/useProgress';
 import { color } from '@/ui/tokens';
-import { useSkiaReady } from '@/game/useSkiaReady';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -23,9 +22,6 @@ export default function RootLayout() {
     IBMPlexMono_500Medium,
   });
   const sound = useProgress((state) => state.settings.sound);
-  // On web, Skia is WebAssembly and has to finish loading before any canvas
-  // is touched. On native it is already there.
-  const skiaReady = useSkiaReady();
 
   useEffect(() => {
     prepareAudio();
@@ -36,12 +32,12 @@ export default function RootLayout() {
   }, [sound]);
 
   useEffect(() => {
-    if (fontsReady && skiaReady) {
+    if (fontsReady) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [fontsReady, skiaReady]);
+  }, [fontsReady]);
 
-  if (!fontsReady || !skiaReady) {
+  if (!fontsReady) {
     return null;
   }
 

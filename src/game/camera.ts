@@ -1,3 +1,4 @@
+import { MIN_ZOOM_SLACK } from './constants';
 import type { Extent } from './constants';
 import type { Point } from './types';
 
@@ -17,13 +18,14 @@ export interface OffsetBounds {
 }
 
 /**
- * The smallest zoom that still covers the screen. Using the larger of the two
- * ratios rather than the smaller is the whole reason the board never shows a
- * black band: the world is always at least as big as the viewport.
+ * The smallest zoom the camera will go to. Taking the larger of the two ratios
+ * is why the board never shows a black band, and the slack on top is why it
+ * can still be panned once it is there.
  */
 export function coverZoom(viewport: Viewport, world: Extent): number {
   'worklet';
-  return Math.max(viewport.width / world.width, viewport.height / world.height);
+  const cover = Math.max(viewport.width / world.width, viewport.height / world.height);
+  return cover * MIN_ZOOM_SLACK;
 }
 
 /**
