@@ -37,6 +37,12 @@ export const boardPalette = {
   dusk: { centre: '#2B2317', edge: '#060507' },
   storm: { centre: '#242320', edge: '#050607' },
   nightfall: { centre: '#191510', edge: '#030304' },
+  // The second half. Each is colder and flatter than the one before it.
+  thresher: { centre: '#3A2A18', edge: '#070607' },
+  granary: { centre: '#2E2A1C', edge: '#050506' },
+  rafters: { centre: '#221F1A', edge: '#040405' },
+  blackout: { centre: '#15140F', edge: '#020203' },
+  chaff: { centre: '#211A11', edge: '#030302' },
 } as const;
 
 /** Overlays the modifiers paint across the board. */

@@ -1,15 +1,13 @@
 // Emits supabase/schema.sql. The per-level sanity bounds are derived from the
 // level curve itself, so they can never drift away from it.
 import { writeFileSync } from 'node:fs';
-import { readFileSync } from 'node:fs';
+import { LEVELS } from '../src/game/difficulty.ts';
 
-const source = readFileSync('src/game/difficulty.ts', 'utf8');
-const rows = [...source.matchAll(/\{ id: (\d+),[\s\S]*?par: \[(\d+), (\d+)\]/g)].map((m) => ({
-  id: Number(m[1]),
-  three: Number(m[2]),
-}));
-if (rows.length !== 30) {
-  throw new Error(`Expected 30 levels in the curve, read ${rows.length}`);
+// Read straight from the curve rather than parsing it. difficulty.ts is
+// deliberately free of any react-native import so this can just import it.
+const rows = LEVELS.map((level) => ({ id: level.id, three: level.par[0] }));
+if (rows.length === 0) {
+  throw new Error('The curve is empty');
 }
 
 // Nobody beats a third of the three-star time. Nobody plays a level for an hour.

@@ -12,7 +12,8 @@ import {
   WORLD_REFERENCE,
   WORLD_WIDTH,
 } from './constants';
-import { groundFor, needleCount, type LevelConfig } from './difficulty';
+import { needleCount, type LevelConfig } from './difficulty';
+import { groundFor } from './ground';
 import { LIGHT_STEPS, TONE_STEPS, strawColorIndex } from './palette';
 import { between, centred, intBetween, mulberry32, seedFrom, type Random } from './prng';
 import type { Extent } from './constants';
