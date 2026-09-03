@@ -15,7 +15,10 @@ export function useSkiaReady(): boolean {
     }
     let cancelled = false;
     import('@shopify/react-native-skia/lib/module/web')
-      .then(({ LoadSkiaWeb }) => LoadSkiaWeb())
+      // CanvasKit resolves its wasm relative to the script by default, which
+      // is wrong once the bundle lives under _expo/static/js. public/ is
+      // copied to the web root, so point it there explicitly.
+      .then(({ LoadSkiaWeb }) => LoadSkiaWeb({ locateFile: (file) => `/${file}` }))
       .then(() => {
         if (!cancelled) {
           setReady(true);

@@ -278,3 +278,37 @@ To publish them on GitHub Pages:
 
 The generator refuses to run while `PUBLISHER` still holds placeholders, so a
 policy with `REPLACE ME` in it cannot reach the web by accident.
+
+## Playing it in a browser
+
+```bash
+npm run web
+```
+
+The game runs on the web through CanvasKit, Skia's WebAssembly build. Three
+things had to be true for that to work, and each is a file rather than a
+setting:
+
+- `public/canvaskit.wasm` — copied to the web root at export. CanvasKit
+  resolves its wasm relative to the script by default, which is wrong once the
+  bundle lives under `_expo/static/js`, so `useSkiaReady` passes an explicit
+  `locateFile`.
+- `src/state/storage.web.ts` — localStorage instead of MMKV, which is native
+  only. Falls back to memory in private windows rather than failing.
+- `src/ads/rewarded.web.ts` — a no-ad shim. Metro follows `require` statically
+  even inside a try/catch, so without this the native ad SDK is pulled into the
+  web bundle and the build fails on react-native internals.
+
+Nothing renders until the wasm has loaded, so `_layout` holds the tree back
+until `useSkiaReady` resolves.
+
+**Measured in Chrome:** a full level-one board — 26,000 stalks into a
+1495 × 2805 texture — rasterises in **490 ms** (118 ms ground, 15 ms building
+path strings, 354 ms parsing and drawing, 3 ms snapshot). First load of a level
+lands in about two seconds including generation and CanvasKit warm-up.
+
+### What the web build does not have
+
+Hints are free, because there are no rewarded ads in a browser. Haptics do
+nothing. Everything else — all thirty levels, the modifiers, the leaderboard,
+progress — behaves the same.
