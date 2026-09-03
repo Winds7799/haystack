@@ -45,7 +45,13 @@
           "microphonePermission": false
         }
       ],
-      "react-native-google-mobile-ads"
+      [
+        "react-native-google-mobile-ads",
+        {
+          "iosAppId": "ca-app-pub-4515907710016956~2931019279",
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -64,9 +70,10 @@
       }
     },
     "owner": "dahbed55",
-    "react-native-google-mobile-ads": {
-      "iosAppId": "ca-app-pub-4515907710016956~2931019279",
-      "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
     }
   }
 }
