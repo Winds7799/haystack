@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useKeepAwake } from 'expo-keep-awake';
-import { AppState, LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { AppState, LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { startAmbience, stopAmbience } from '@/audio';
 import { Board } from '@/game/Board';
@@ -14,6 +14,7 @@ import { useCamera } from '@/game/useCamera';
 import { useDrift } from '@/game/useDrift';
 import { useLevelRun } from '@/game/useLevelRun';
 import type { Viewport } from '@/game/camera';
+import type { ObjectKind } from '@/game/types';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import { useRun } from '@/state/useRun';
 import { claimHeldScore, dropHeldScore, onPending } from '@/net/post';
@@ -22,6 +23,7 @@ import { Message } from '@/ui/components/Message';
 import { PauseSheet } from '@/ui/components/PauseSheet';
 import { Results } from '@/ui/components/Results';
 import { NamePrompt } from '@/ui/components/NamePrompt';
+import { NewObjects } from '@/ui/components/NewObjects';
 import { Toast } from '@/ui/components/Toast';
 import { color } from '@/ui/tokens';
 
@@ -31,8 +33,20 @@ function readModifier(value: string | undefined): Modifier | 'none' | undefined 
   return MODIFIERS.find((entry) => entry === value);
 }
 
+const KEEP_AWAKE = 'haystack-level';
+
 export default function PlayScreen() {
-  useKeepAwake();
+  // Screens must not sleep mid-level. There is no such thing in a browser tab,
+  // and asking for it there only throws into the console.
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+    activateKeepAwakeAsync(KEEP_AWAKE).catch(() => undefined);
+    return () => {
+      deactivateKeepAwake(KEEP_AWAKE).catch(() => undefined);
+    };
+  }, []);
   const params = useLocalSearchParams<{ level?: string; modifier?: string }>();
   const levelId = Number.parseInt(params.level ?? '', 10);
   const listed = findLevel(levelId);
@@ -56,6 +70,9 @@ export default function PlayScreen() {
 
   const [viewport, setViewport] = useState<Viewport>({ width: 1, height: 1 });
   const [needsName, setNeedsName] = useState(false);
+  // Kinds this board introduces. Captured once, when the run begins, so
+  // marking them seen does not make the plate vanish mid-read.
+  const [introducing, setIntroducing] = useState<ObjectKind[] | null>(null);
 
   useEffect(() => {
     onPending((pending) => setNeedsName(pending !== null));
@@ -84,6 +101,28 @@ export default function PlayScreen() {
     () => (world ? found.map((index) => world.objects[index]) : []),
     [world, found]
   );
+  useEffect(() => {
+    if (board.status !== 'ready' || !config) {
+      return;
+    }
+    const seen = new Set(useProgress.getState().seenKinds);
+    const fresh = config.decoys.map((entry) => entry.kind).filter((kind) => !seen.has(kind));
+    // The needle leads the first plate, so level one explains the target too.
+    const withNeedle: ObjectKind[] = seen.has('needle') ? fresh : ['needle', ...fresh];
+    if (withNeedle.length === 0) {
+      return;
+    }
+    setIntroducing(withNeedle);
+    useRun.getState().pause();
+  }, [board.status, config, levelId, attempt]);
+
+  const onIntroDone = useCallback(() => {
+    const kinds = introducing ?? [];
+    useProgress.getState().markKindsSeen(kinds);
+    setIntroducing(null);
+    useRun.getState().resume();
+  }, [introducing]);
+
   const drift = useDrift(config?.modifier === 'drift', reducedMotion, status !== 'playing');
   const run = useLevelRun(config, world, needles, drift, levelId, attempt);
 
@@ -179,7 +218,7 @@ export default function PlayScreen() {
             />
           )}
           <Toast message={run.toast?.text ?? null} serial={run.toast?.serial ?? 0} />
-          {status === 'paused' ? (
+          {status === 'paused' && !introducing ? (
             <PauseSheet
               levelId={levelId}
               onResume={onResume}
@@ -200,6 +239,14 @@ export default function PlayScreen() {
               onRetry={onRestart}
               onNext={onNext}
               onLevels={onLevels}
+            />
+          ) : null}
+          {introducing ? (
+            <NewObjects
+              kinds={introducing}
+              similarity={config.similarity}
+              colourBlindSafe={settings.colourBlindSafe}
+              onDismiss={onIntroDone}
             />
           ) : null}
           {run.finish && needsName ? (

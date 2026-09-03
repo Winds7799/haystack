@@ -34,16 +34,18 @@ export function useBoard(
     let pending = 0;
     setState({ status: 'loading' });
 
-    const release = () => {
-      const previous = live.current;
-      live.current = null;
-      if (previous) {
+    // Freeing a texture the moment it is replaced is too early: React has
+    // committed the new state but Skia has not yet painted a frame without the
+    // old image, and drawing a deleted one is a hard crash. One frame of grace
+    // is enough, and still releases it long before another board is built.
+    const releaseAfterAFrame = (doomed: SkImage) => {
+      requestAnimationFrame(() => {
         try {
-          previous.dispose();
+          doomed.dispose();
         } catch {
           // Already gone. Nothing to do and nothing worth saying.
         }
-      }
+      });
     };
 
     const build = () => {
@@ -66,9 +68,12 @@ export function useBoard(
           texture.dispose();
           return;
         }
-        release();
+        const previous = live.current;
         live.current = texture;
         setState({ status: 'ready', world, texture });
+        if (previous) {
+          releaseAfterAFrame(previous);
+        }
       } catch (cause) {
         if (!cancelled) {
           const message = cause instanceof Error ? cause.message : 'The board could not be built.';
@@ -85,7 +90,11 @@ export function useBoard(
     return () => {
       cancelled = true;
       cancelAnimationFrame(pending);
-      release();
+      const doomed = live.current;
+      live.current = null;
+      if (doomed) {
+        releaseAfterAFrame(doomed);
+      }
     };
   }, [levelId, attempt, colourBlindSafe, modifierOverride]);
 

@@ -33,12 +33,15 @@ interface ProgressState {
   settings: Settings;
   /** Set once how-to-play has been seen, so it only opens itself once. */
   seenTutorial: boolean;
+  /** Decoy kinds already introduced, so each is shown exactly once. */
+  seenKinds: string[];
   /** Reading from disk is asynchronous; until this is true, records are unknown. */
   hydrated: boolean;
   beginAttempt: (levelId: number) => void;
   recordFinish: (levelId: number, seconds: number, stars: number) => void;
   set: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   markTutorialSeen: () => void;
+  markKindsSeen: (kinds: readonly string[]) => void;
   reset: () => void;
 }
 
@@ -54,6 +57,7 @@ export const useProgress = create<ProgressState>()(
       records: {},
       settings: DEFAULT_SETTINGS,
       seenTutorial: false,
+      seenKinds: [],
       hydrated: false,
       beginAttempt: (levelId) =>
         set((state) => {
@@ -78,12 +82,14 @@ export const useProgress = create<ProgressState>()(
         }),
       set: (key, value) => set((state) => ({ settings: { ...state.settings, [key]: value } })),
       markTutorialSeen: () => set({ seenTutorial: true }),
-      reset: () => set({ records: {} }),
+      markKindsSeen: (kinds) =>
+        set((state) => ({ seenKinds: [...new Set([...state.seenKinds, ...kinds])] })),
+      reset: () => set({ records: {}, seenKinds: [] }),
     }),
     {
       name: 'progress',
       storage: createJSONStorage(() => deviceStorage),
-      partialize: ({ records, settings, seenTutorial }) => ({ records, settings, seenTutorial }) as Partial<ProgressState>,
+      partialize: ({ records, settings, seenTutorial, seenKinds }) => ({ records, settings, seenTutorial, seenKinds }) as Partial<ProgressState>,
       onRehydrateStorage: () => () => {
         useProgress.setState({ hydrated: true });
       },
