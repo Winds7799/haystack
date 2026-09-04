@@ -64,6 +64,7 @@ export default function PlayScreen() {
   const board = useBoard(levelId, attempt, settings.colourBlindSafe, override);
   const status = useRun((state) => state.status);
   const misses = useRun((state) => state.misses);
+  const hintsUsed = useRun((state) => state.hints);
   const lastMiss = useRun((state) => state.lastMiss);
   const found = useRun((state) => state.found);
   const reducedMotion = settings.reducedMotion || useReducedMotion();
@@ -212,6 +213,7 @@ export default function PlayScreen() {
               misses={misses}
               running={status === 'playing'}
               buyingHint={run.buyingHint}
+              hintsUsed={hintsUsed}
               leftHanded={settings.leftHanded}
               onHint={run.onHint}
               onPause={onPause}

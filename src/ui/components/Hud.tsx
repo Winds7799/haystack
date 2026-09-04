@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { adsAvailable } from '@/ads/rewarded';
-import { HINT_PENALTY } from '@/state/useRun';
+import { HINT_PENALTY, MAX_HINTS } from '@/state/useRun';
 import { STARS_WITH_HINT } from '@/game/scoring';
 import { color, font, space, type } from '../tokens';
 import { Button } from './Button';
@@ -14,6 +14,8 @@ interface HudProps {
   running: boolean;
   /** True while an ad is on its way. */
   buyingHint: boolean;
+  /** How many hints this run has already spent. */
+  hintsUsed: number;
   /** Mirrors the bottom row, so hint and pause fall under a left thumb. */
   leftHanded: boolean;
   onHint: () => void;
@@ -32,10 +34,13 @@ export function Hud({
   misses,
   running,
   buyingHint,
+  hintsUsed,
   leftHanded,
   onHint,
   onPause,
 }: HudProps) {
+  const left = Math.max(0, MAX_HINTS - hintsUsed);
+  const spent = left === 0;
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -65,13 +70,19 @@ export function Hud({
       >
         <Button
           label={buyingHint ? 'Loading ad' : 'Hint'}
-          note={buyingHint ? 'one moment' : adsAvailable() ? `watch an ad, ${HINT_COST}` : HINT_COST}
+          note={
+            buyingHint
+              ? 'one moment'
+              : spent
+                ? 'none left'
+                : `${left} left · ${adsAvailable() ? 'ad, ' : ''}${HINT_COST}`
+          }
           accessibilityLabel={
             adsAvailable()
               ? `Watch an ad for a hint. Costs ${HINT_COST}`
               : `Show a hint. Costs ${HINT_COST}`
           }
-          disabled={!running || buyingHint}
+          disabled={!running || buyingHint || spent}
           onPress={onHint}
         />
         <Button label="Pause" accessibilityLabel="Pause the level" onPress={onPause} />

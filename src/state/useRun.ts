@@ -6,6 +6,15 @@ export type RunStatus = 'playing' | 'paused' | 'won';
 /** What a miss costs, and what a hint costs, in milliseconds. */
 export const MISS_PENALTY = 5000;
 export const HINT_PENALTY = 10000;
+
+/**
+ * Hints are capped per level, and the cap is what makes them bounded.
+ *
+ * Paying with an ad is not a limit: a browser has no ads, and a patient player
+ * on a phone has as many as they are willing to sit through. Three is enough
+ * to rescue a level you are stuck on and far too few to sweep one with.
+ */
+export const MAX_HINTS = 3;
 /** How long the hint halo stays on the board. */
 export const HINT_DURATION = 1500;
 

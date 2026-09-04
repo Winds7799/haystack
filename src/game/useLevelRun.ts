@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { recordFor, useProgress } from '@/state/useProgress';
 import { postScore } from '@/net/post';
-import { HINT_DURATION, elapsedOf, useRun } from '@/state/useRun';
+import { HINT_DURATION, MAX_HINTS, elapsedOf, useRun } from '@/state/useRun';
 import type { LevelConfig } from './difficulty';
 import { missMessage, progressMessage } from './copy';
 import {
@@ -165,6 +165,10 @@ export function useLevelRun(
   const onHint = useCallback(async () => {
     const state = useRun.getState();
     if (!world || state.status !== 'playing' || buyingHint) {
+      return;
+    }
+    if (state.hints >= MAX_HINTS) {
+      say('no hints left on this level');
       return;
     }
     // On a twin level the hint points at whichever needle is still out there.
