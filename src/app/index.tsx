@@ -99,7 +99,7 @@ export default function LandingScreen() {
               {`${done}/${LEVELS.length} levels · ${stars}/${LEVELS.length * MAX_STARS} stars`}
             </Text>
           ) : (
-            <Text style={styles.progress}>Thirty levels. One needle in each.</Text>
+            <Text style={styles.progress}>{`${LEVELS.length} levels. One needle in each.`}</Text>
           )}
 
           <Button
