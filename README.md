@@ -1,4 +1,4 @@
-# Haystack
+# Windies
 
 Search a dense procedurally generated haystack for a single sewing needle, scanning by
 panning and zooming. Nails, pins, wire, splinters and staples punish careless tapping.

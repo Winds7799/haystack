@@ -49,7 +49,7 @@ function page({ title, heading, nav, body }) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
-<meta name="description" content="${escape(title)} for Haystack.">
+<meta name="description" content="${escape(title)} for Windies.">
 <style>${CSS}</style>
 </head>
 <body>
@@ -69,7 +69,7 @@ ${body}
 }
 
 function navFor(current) {
-  const links = [['index.html', 'Haystack'], ...DOCUMENTS.map((d) => [`${d.id}.html`, d.title])];
+  const links = [['index.html', 'Windies'], ...DOCUMENTS.map((d) => [`${d.id}.html`, d.title])];
   return `<nav>${links
     .map(
       ([href, label]) =>
@@ -92,7 +92,7 @@ for (const doc of DOCUMENTS) {
   writeFileSync(
     join(out, `${doc.id}.html`),
     page({
-      title: `Haystack — ${doc.title}`,
+      title: `Windies — ${doc.title}`,
       heading: doc.title,
       nav: navFor(`${doc.id}.html`),
       body,
@@ -103,13 +103,13 @@ for (const doc of DOCUMENTS) {
 writeFileSync(
   join(out, 'index.html'),
   page({
-    title: 'Haystack',
-    heading: 'Haystack',
+    title: 'Windies',
+    heading: 'Windies',
     nav: navFor('index.html'),
     body: `<p>A game about finding one needle in a great deal of straw.</p>
-<p>Thirty levels. The difficulty is never more straw — it is decoys that look
-more and more like the thing you are hunting, until a nail is nearly a needle
-and only the eye gives it away.</p>
+<p>A hundred levels. The difficulty is never more straw — it is decoys that
+look more and more like the thing you are hunting, until a nail is nearly a
+needle and only the eye gives it away.</p>
 <h2>Legal</h2>
 <p>These pages hold the <a href="privacy.html">privacy policy</a> and the
 <a href="terms.html">terms</a>. The same text appears inside the app under

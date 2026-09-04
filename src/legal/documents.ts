@@ -41,7 +41,7 @@ const PRIVACY: Document = {
     {
       heading: 'The short version',
       body: [
-        'Haystack has no accounts and asks for no sign in. Your progress lives on your device. Two things can leave it: a leaderboard entry, if you choose to post one, and the data Google needs to show you an ad, if you choose to watch one.',
+        'Windies has no accounts and asks for no sign in. Your progress lives on your device. Two things can leave it: a leaderboard entry, if you choose to post one, and the data Google needs to show you an ad, if you choose to watch one.',
       ],
     },
     {
@@ -77,7 +77,7 @@ const PRIVACY: Document = {
     {
       heading: 'Children',
       body: [
-        'Haystack is not directed at children under 13. We do not knowingly collect data from them. If you believe a child has posted an entry, tell us and it will be removed.',
+        'Windies is not directed at children under 13. We do not knowingly collect data from them. If you believe a child has posted an entry, tell us and it will be removed.',
       ],
     },
   ],
@@ -90,7 +90,7 @@ const TERMS: Document = {
     {
       heading: 'Using the game',
       body: [
-        'Haystack is provided as it is, for your personal use. You may not resell it, take it apart, or use it to break the law.',
+        'Windies is provided as it is, for your personal use. You may not resell it, take it apart, or use it to break the law.',
       ],
     },
     {

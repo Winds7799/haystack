@@ -84,7 +84,7 @@ export default function LandingScreen() {
       >
         <Animated.View style={[styles.masthead, mastheadStyle]}>
           <Text style={styles.wordmark} accessibilityRole="header">
-            Haystack
+            Windies
           </Text>
           <View style={styles.rule} />
           <Text style={styles.tagline}>One needle. Everything else is not.</Text>
