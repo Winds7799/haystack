@@ -226,6 +226,7 @@ export default function PlayScreen() {
             />
           )}
           <Toast message={run.toast?.text ?? null} serial={run.toast?.serial ?? 0} />
+          {offering ? <HintOffer onClose={() => setOffering(false)} /> : null}
           {status === 'paused' && !introducing ? (
             <PauseSheet
               levelId={levelId}

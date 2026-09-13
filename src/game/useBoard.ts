@@ -6,6 +6,26 @@ import { generateWorld } from './generate';
 import { rasterizeWorld } from './render';
 import type { World } from './types';
 
+/**
+ * Freeing a texture the moment nothing in React references it is still too
+ * early: Skia's renderer can have a draw queued against it for a frame or two
+ * after the component that owned it is gone, and drawing a deleted image is a
+ * hard crash rather than a blank. Two seconds is far beyond any queued frame
+ * and far short of the next board, so one spare texture is held briefly and
+ * nothing is ever drawn after it is freed.
+ */
+const RETIRE_AFTER = 2000;
+
+function retire(texture: SkImage): void {
+  setTimeout(() => {
+    try {
+      texture.dispose();
+    } catch {
+      // Already gone. Nothing to do and nothing worth saying.
+    }
+  }, RETIRE_AFTER);
+}
+
 export type BoardState =
   | { status: 'loading' }
   | { status: 'ready'; world: World; texture: SkImage }
@@ -34,20 +54,6 @@ export function useBoard(
     let pending = 0;
     setState({ status: 'loading' });
 
-    // Freeing a texture the moment it is replaced is too early: React has
-    // committed the new state but Skia has not yet painted a frame without the
-    // old image, and drawing a deleted one is a hard crash. One frame of grace
-    // is enough, and still releases it long before another board is built.
-    const releaseAfterAFrame = (doomed: SkImage) => {
-      requestAnimationFrame(() => {
-        try {
-          doomed.dispose();
-        } catch {
-          // Already gone. Nothing to do and nothing worth saying.
-        }
-      });
-    };
-
     const build = () => {
       if (cancelled) {
         return;
@@ -72,7 +78,7 @@ export function useBoard(
         live.current = texture;
         setState({ status: 'ready', world, texture });
         if (previous) {
-          releaseAfterAFrame(previous);
+          retire(previous);
         }
       } catch (cause) {
         if (!cancelled) {
@@ -87,16 +93,28 @@ export function useBoard(
       pending = requestAnimationFrame(build);
     });
 
+    // Deliberately no disposal here. This cleanup also runs when a dependency
+    // changes — a retry, a new level, Fast Refresh — and the state still
+    // holds the old texture for at least one more render. The next build
+    // releases it once the replacement is in place; unmount is handled below.
     return () => {
       cancelled = true;
       cancelAnimationFrame(pending);
+    };
+  }, [levelId, attempt, colourBlindSafe, modifierOverride]);
+
+  // True unmount only: nothing can draw the texture once the screen is gone,
+  // so a frame of grace is all it needs.
+  useEffect(
+    () => () => {
       const doomed = live.current;
       live.current = null;
       if (doomed) {
-        releaseAfterAFrame(doomed);
+        retire(doomed);
       }
-    };
-  }, [levelId, attempt, colourBlindSafe, modifierOverride]);
+    },
+    []
+  );
 
   return state;
 }
