@@ -39,7 +39,10 @@ export function AmbientBoard({
 
   useEffect(() => {
     let cancelled = false;
-    const frame = requestAnimationFrame(() => {
+    // A timer, not requestAnimationFrame, for the same reason the level board
+    // uses one: rAF is suspended while the app is hidden, and a landing screen
+    // opened in the background would never get its backdrop.
+    const frame = setTimeout(() => {
       if (cancelled) {
         return;
       }
@@ -66,7 +69,7 @@ export function AmbientBoard({
     });
     return () => {
       cancelled = true;
-      cancelAnimationFrame(frame);
+      clearTimeout(frame);
     };
   }, []);
 
