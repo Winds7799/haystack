@@ -65,6 +65,14 @@ async function call(path: string, init: RequestInit): Promise<Response> {
       throw new Error(await describe(response));
     }
     return response;
+  } catch (cause) {
+    // A server reply that was not ok is already worded above. Anything else
+    // is the network — no route, no DNS, a timeout — and the platform's own
+    // wording for that is not something to put in front of a player.
+    if (cause instanceof Error && cause.message.startsWith('The leaderboard')) {
+      throw cause;
+    }
+    throw new Error('The leaderboard could not be reached. Check the connection and try again.');
   } finally {
     clearTimeout(timer);
   }

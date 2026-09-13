@@ -90,6 +90,7 @@ export default function LeaderboardScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.pickerScroll}
         contentContainerStyle={styles.picker}
       >
         {LEVELS.map((entry) => (
@@ -187,10 +188,17 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  picker: { gap: space.xs, paddingBottom: space.md, paddingRight: space.xl },
+  pickerScroll: { flexGrow: 0 },
+  picker: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.xs,
+    paddingBottom: space.md,
+    paddingRight: space.xl,
+  },
   chip: {
     minWidth: layout.touchTarget,
-    minHeight: layout.touchTarget,
+    height: layout.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.sm,
