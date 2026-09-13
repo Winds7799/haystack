@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { restore, storeAvailable } from '@/iap/hints';
+import { CREATOR, PUBLISHER } from '@/legal/documents';
 import { deleteMyScores, leaderboardReady } from '@/net/leaderboard';
 import { useIdentity } from '@/state/useIdentity';
 import { useProgress } from '@/state/useProgress';
@@ -131,6 +132,28 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.group}>
+        <Text style={styles.caption}>{`Made by ${PUBLISHER.name}`}</Text>
+        <Button
+          label="Instagram"
+          note={CREATOR.instagram.handle}
+          accessibilityLabel={`Open the creator's Instagram, ${CREATOR.instagram.handle}`}
+          onPress={() => {
+            void Linking.openURL(CREATOR.instagram.url);
+          }}
+          style={styles.wide}
+        />
+        <Button
+          label="YouTube"
+          note={CREATOR.youtube.handle}
+          accessibilityLabel={`Open the creator's YouTube channel, ${CREATOR.youtube.handle}`}
+          onPress={() => {
+            void Linking.openURL(CREATOR.youtube.url);
+          }}
+          style={styles.wide}
+        />
+      </View>
+
+      <View style={styles.group}>
         {confirming ? (
           <>
             <Text style={styles.warning}>
@@ -169,6 +192,13 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: space.md },
   wide: { alignSelf: 'stretch' },
+  caption: {
+    color: color.goldDim,
+    fontFamily: font.mono,
+    fontSize: type.caption,
+    textAlign: 'center',
+    marginBottom: space.xs,
+  },
   warning: {
     color: color.textMuted,
     fontFamily: font.body,

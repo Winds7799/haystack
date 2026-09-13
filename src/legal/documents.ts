@@ -16,6 +16,12 @@ export const PUBLISHER = {
   jurisdiction: 'New York, United States',
 } as const;
 
+/** Where the game's maker can be found, linked from Settings. */
+export const CREATOR = {
+  instagram: { handle: '@dahbedbrand', url: 'https://www.instagram.com/dahbedbrand/' },
+  youtube: { handle: '@Winds_YT', url: 'https://www.youtube.com/@Winds_YT' },
+} as const;
+
 /** True while the placeholders are still placeholders. */
 export function legalIncomplete(): boolean {
   return PUBLISHER.contact.startsWith('REPLACE') || PUBLISHER.jurisdiction.startsWith('REPLACE');
