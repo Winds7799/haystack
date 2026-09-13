@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import { prepareAudio, setSoundEnabled } from '@/audio';
+import { closeStore, prepareStore, restore, storeAvailable } from '@/iap/hints';
 import { useProgress } from '@/state/useProgress';
 import { color } from '@/ui/tokens';
 
@@ -25,6 +26,26 @@ export default function RootLayout() {
 
   useEffect(() => {
     prepareAudio();
+  }, []);
+
+  // The store listener is what turns a purchase into the entitlement. A quiet
+  // restore on launch covers a reinstall or a second device, so nobody has to
+  // find the button in Settings to get back what they paid for.
+  useEffect(() => {
+    if (!storeAvailable()) {
+      return;
+    }
+    const grant = () => useProgress.getState().grantUnlimitedHints();
+    prepareStore(grant).then((ready) => {
+      if (ready && !useProgress.getState().unlimitedHints) {
+        restore().then((owned) => {
+          if (owned) {
+            grant();
+          }
+        });
+      }
+    });
+    return closeStore;
   }, []);
 
   useEffect(() => {

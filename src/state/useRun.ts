@@ -3,18 +3,24 @@ import type { ObjectKind } from '@/game/types';
 
 export type RunStatus = 'playing' | 'paused' | 'won';
 
-/** What a miss costs, and what a hint costs, in milliseconds. */
+/** What a miss costs, in milliseconds. */
 export const MISS_PENALTY = 5000;
-export const HINT_PENALTY = 10000;
 
 /**
- * Hints are capped per level, and the cap is what makes them bounded.
- *
- * Paying with an ad is not a limit: a browser has no ads, and a patient player
- * on a phone has as many as they are willing to sit through. Three is enough
- * to rescue a level you are stuck on and far too few to sweep one with.
+ * What a hint costs, as a share of the level's three-star par. A flat ten
+ * seconds was nothing on a five-minute level and everything on a twenty-second
+ * one; a quarter of par bites the same everywhere and bites harder the deeper
+ * you go, which is the escalation without ever taking hints away.
  */
-export const MAX_HINTS = 3;
+export const HINT_COST_OF_PAR = 0.25;
+
+/**
+ * Hints a level allows without the purchase. One is enough to be rescued once
+ * and not enough to lean on, which is what leaves something worth buying. The
+ * purchase lifts this cap and nothing else — every hint still costs time and
+ * the third star, so the leaderboard stays honest.
+ */
+export const FREE_HINTS = 1;
 /** How long the hint halo stays on the board. */
 export const HINT_DURATION = 1500;
 
@@ -50,7 +56,7 @@ interface RunState {
   resume: () => void;
   miss: (kind: ObjectKind | null) => void;
   markFound: (index: number) => void;
-  takeHint: () => void;
+  takeHint: (penaltyMs: number) => void;
   win: () => void;
 }
 
@@ -124,13 +130,13 @@ export const useRun = create<RunState>()((set, get) => ({
         : { found: [...state.found, index] }
     ),
 
-  takeHint: () =>
+  takeHint: (penaltyMs) =>
     set((state) =>
       state.status !== 'playing'
         ? state
         : {
             hints: state.hints + 1,
-            penalty: state.penalty + HINT_PENALTY,
+            penalty: state.penalty + penaltyMs,
             hintUntil: Date.now() + HINT_DURATION,
           }
     ),

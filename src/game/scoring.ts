@@ -1,3 +1,4 @@
+import { HINT_COST_OF_PAR } from '@/state/useRun';
 import type { LevelConfig } from './difficulty';
 
 export const MAX_STARS = 3;
@@ -30,4 +31,9 @@ export function comparedToBest(seconds: number, best: number): string | null {
   }
   const size = Math.abs(delta).toFixed(1);
   return delta > 0 ? `${size}s faster than your best` : `${size}s slower than your best`;
+}
+
+/** What one hint adds to the clock on this level, in milliseconds. */
+export function hintPenaltyFor(config: LevelConfig): number {
+  return Math.round(config.par[0] * HINT_COST_OF_PAR) * 1000;
 }

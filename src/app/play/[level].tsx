@@ -7,6 +7,7 @@ import { startAmbience, stopAmbience } from '@/audio';
 import { Board } from '@/game/Board';
 import { MAX_ZOOM } from '@/game/constants';
 import { FIRST_LEVEL, findLevel, type Modifier } from '@/game/difficulty';
+import { hintPenaltyFor } from '@/game/scoring';
 import { panFeedback } from '@/game/feedback';
 import { findNeedles, rotateAbout } from '@/game/hit';
 import { useBoard } from '@/game/useBoard';
@@ -18,6 +19,7 @@ import type { ObjectKind } from '@/game/types';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import { useRun } from '@/state/useRun';
 import { claimHeldScore, dropHeldScore, onPending } from '@/net/post';
+import { HintOffer } from '@/ui/components/HintOffer';
 import { Hud } from '@/ui/components/Hud';
 import { Message } from '@/ui/components/Message';
 import { PauseSheet } from '@/ui/components/PauseSheet';
@@ -65,6 +67,8 @@ export default function PlayScreen() {
   const status = useRun((state) => state.status);
   const misses = useRun((state) => state.misses);
   const hintsUsed = useRun((state) => state.hints);
+  const unlimitedHints = useProgress((state) => state.unlimitedHints);
+  const [offering, setOffering] = useState(false);
   const lastMiss = useRun((state) => state.lastMiss);
   const found = useRun((state) => state.found);
   const reducedMotion = settings.reducedMotion || useReducedMotion();
@@ -213,6 +217,9 @@ export default function PlayScreen() {
               misses={misses}
               running={status === 'playing'}
               hintsUsed={hintsUsed}
+              hintCost={hintPenaltyFor(config) / 1000}
+              unlimitedHints={unlimitedHints}
+              onOffer={() => setOffering(true)}
               leftHanded={settings.leftHanded}
               onHint={run.onHint}
               onPause={onPause}

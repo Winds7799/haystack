@@ -47,7 +47,7 @@ const PRIVACY: Document = {
     {
       heading: 'What stays on your device',
       body: [
-        'Your best times, stars, attempts, settings and the name you chose are stored on the device and nowhere else. Deleting the app deletes them.',
+        'Your best times, stars, attempts, settings and the name you chose are stored on the device and nowhere else. Deleting the app deletes them. Whether you own unlimited hints is also kept on the device, and confirmed with Apple, who hold the record of the purchase.',
       ],
     },
     {
@@ -94,9 +94,11 @@ const TERMS: Document = {
       ],
     },
     {
-      heading: 'Hints',
+      heading: 'Hints and the one purchase',
       body: [
-        'Hints cost time on the clock and cap a level at two stars. There are three a level. Nothing in the game is bought with money, there are no advertisements, and there are no purchases of any kind.',
+        'Every hint adds time to the clock and caps the level at two stars. Without a purchase there is one hint a level.',
+        'Unlimited hints is a single one-time purchase, made through Apple and charged to your Apple ID. It lifts the one-a-level limit and changes nothing else: bought hints cost exactly what free ones do. It is yours on every device signed in to the same Apple ID, and Restore purchase in Settings brings it back after a reinstall.',
+        'There are no advertisements, no subscriptions and no other purchases. Refunds are handled by Apple under its own terms.',
       ],
     },
     {

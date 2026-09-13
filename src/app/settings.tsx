@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { restore, storeAvailable } from '@/iap/hints';
 import { deleteMyScores, leaderboardReady } from '@/net/leaderboard';
 import { useIdentity } from '@/state/useIdentity';
 import { useProgress } from '@/state/useProgress';
@@ -18,6 +19,9 @@ export default function SettingsScreen() {
   const [renaming, setRenaming] = useState(false);
   const [erasing, setErasing] = useState(false);
   const [erased, setErased] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreNote, setRestoreNote] = useState<string | null>(null);
+  const unlimitedHints = useProgress((state) => state.unlimitedHints);
   const name = useIdentity((state) => state.name);
 
   const onReset = useCallback(() => {
@@ -81,6 +85,33 @@ export default function SettingsScreen() {
                 .then(() => setErased(true))
                 .catch(() => undefined)
                 .finally(() => setErasing(false));
+            }}
+            style={styles.wide}
+          />
+        </View>
+      ) : null}
+
+      {storeAvailable() ? (
+        <View style={styles.group}>
+          <Button
+            label={unlimitedHints ? 'Unlimited hints' : 'Restore purchase'}
+            note={unlimitedHints ? 'owned' : restoring ? 'checking' : (restoreNote ?? undefined)}
+            disabled={unlimitedHints || restoring}
+            accessibilityLabel={
+              unlimitedHints ? 'Unlimited hints, owned' : 'Restore a purchase made on another device'
+            }
+            onPress={() => {
+              setRestoring(true);
+              setRestoreNote(null);
+              restore()
+                .then((owned) => {
+                  if (owned) {
+                    useProgress.getState().grantUnlimitedHints();
+                  } else {
+                    setRestoreNote('nothing to restore on this Apple ID');
+                  }
+                })
+                .finally(() => setRestoring(false));
             }}
             style={styles.wide}
           />

@@ -33,6 +33,8 @@ interface ProgressState {
   settings: Settings;
   /** Set once how-to-play has been seen, so it only opens itself once. */
   seenTutorial: boolean;
+  /** The one purchase. Written only when the store confirms it. */
+  unlimitedHints: boolean;
   /** Decoy kinds already introduced, so each is shown exactly once. */
   seenKinds: string[];
   /** Reading from disk is asynchronous; until this is true, records are unknown. */
@@ -41,6 +43,7 @@ interface ProgressState {
   recordFinish: (levelId: number, seconds: number, stars: number) => void;
   set: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   markTutorialSeen: () => void;
+  grantUnlimitedHints: () => void;
   markKindsSeen: (kinds: readonly string[]) => void;
   reset: () => void;
 }
@@ -57,6 +60,7 @@ export const useProgress = create<ProgressState>()(
       records: {},
       settings: DEFAULT_SETTINGS,
       seenTutorial: false,
+      unlimitedHints: false,
       seenKinds: [],
       hydrated: false,
       beginAttempt: (levelId) =>
@@ -82,6 +86,7 @@ export const useProgress = create<ProgressState>()(
         }),
       set: (key, value) => set((state) => ({ settings: { ...state.settings, [key]: value } })),
       markTutorialSeen: () => set({ seenTutorial: true }),
+      grantUnlimitedHints: () => set({ unlimitedHints: true }),
       markKindsSeen: (kinds) =>
         set((state) => ({ seenKinds: [...new Set([...state.seenKinds, ...kinds])] })),
       reset: () => set({ records: {}, seenKinds: [] }),

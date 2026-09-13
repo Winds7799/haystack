@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HINT_PENALTY, MAX_HINTS } from '@/state/useRun';
+import { FREE_HINTS } from '@/state/useRun';
 import { STARS_WITH_HINT } from '@/game/scoring';
 import { color, font, space, type } from '../tokens';
 import { Button } from './Button';
@@ -14,13 +14,17 @@ interface HudProps {
   /** True while an ad is on its way. */
   /** How many hints this run has already spent. */
   hintsUsed: number;
+  /** Seconds a hint adds on this level. */
+  hintCost: number;
+  unlimitedHints: boolean;
+  /** Opens the purchase offer. Only used once the free hint is spent. */
+  onOffer: () => void;
   /** Mirrors the bottom row, so hint and pause fall under a left thumb. */
   leftHanded: boolean;
   onHint: () => void;
   onPause: () => void;
 }
 
-const HINT_COST = `+${HINT_PENALTY / 1000}s, ${STARS_WITH_HINT} stars max`;
 
 /**
  * Chrome only. It hugs the top and bottom edges inside the safe area so the
@@ -32,12 +36,16 @@ export function Hud({
   misses,
   running,
   hintsUsed,
+  hintCost,
+  unlimitedHints,
+  onOffer,
   leftHanded,
   onHint,
   onPause,
 }: HudProps) {
-  const left = Math.max(0, MAX_HINTS - hintsUsed);
-  const spent = left === 0;
+  const left = Math.max(0, FREE_HINTS - hintsUsed);
+  const spent = !unlimitedHints && left === 0;
+  const cost = `+${hintCost}s, 2 stars max`;
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -67,10 +75,12 @@ export function Hud({
       >
         <Button
           label="Hint"
-          note={spent ? 'none left' : `${left} left · ${HINT_COST}`}
-          accessibilityLabel={spent ? 'No hints left' : `Show a hint. Costs ${HINT_COST}`}
-          disabled={!running || spent}
-          onPress={onHint}
+          note={
+            unlimitedHints ? `unlimited · ${cost}` : spent ? 'get unlimited' : `${left} left · ${cost}`
+          }
+          accessibilityLabel={spent ? 'Free hint used. Get unlimited hints' : `Show a hint. Costs ${cost}`}
+          disabled={!running}
+          onPress={spent ? onOffer : onHint}
         />
         <Button label="Pause" accessibilityLabel="Pause the level" onPress={onPause} />
       </View>

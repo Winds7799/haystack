@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { recordFor, useProgress } from '@/state/useProgress';
 import { postScore } from '@/net/post';
-import { HINT_DURATION, MAX_HINTS, elapsedOf, useRun } from '@/state/useRun';
+import { FREE_HINTS, HINT_DURATION, elapsedOf, useRun } from '@/state/useRun';
 import type { LevelConfig } from './difficulty';
 import { missMessage, progressMessage } from './copy';
 import {
@@ -12,7 +12,7 @@ import {
   winFeedback,
 } from './feedback';
 import { hintHalo, hitTest, unrotate } from './hit';
-import { starsFor } from './scoring';
+import { hintPenaltyFor, starsFor } from './scoring';
 import type { Drift } from './useDrift';
 import type { BoardObject, Point, World } from './types';
 
@@ -154,16 +154,16 @@ export function useLevelRun(
   );
 
   /**
-   * A hint costs ten seconds and the third star, and there are three a level.
-   * The cap is what keeps it from being a way to sweep a board.
+   * A hint costs a share of par and the third star. Without the purchase
+   * there is one a level; with it there is no cap — but the cost stays, so
+   * a bought hint is never a free one.
    */
   const onHint = useCallback(() => {
     const state = useRun.getState();
-    if (!world || state.status !== 'playing') {
+    if (!world || !config || state.status !== 'playing') {
       return;
     }
-    if (state.hints >= MAX_HINTS) {
-      say('no hints left on this level');
+    if (!useProgress.getState().unlimitedHints && state.hints >= FREE_HINTS) {
       return;
     }
     // On a twin level the hint points at whichever needle is still out there.
@@ -172,10 +172,10 @@ export function useLevelRun(
       return;
     }
 
-    state.takeHint();
+    state.takeHint(hintPenaltyFor(config));
     setHint(hintHalo(world, pending));
     later(() => setHint(null), HINT_DURATION);
-  }, [world, needles, later, say]);
+  }, [world, config, needles, later]);
 
   return { onTap, onHint, hint, finish, celebrating, target, toast };
 }
