@@ -51,7 +51,7 @@ export function useBoard(
 
   useEffect(() => {
     let cancelled = false;
-    let pending = 0;
+    let pending: ReturnType<typeof setTimeout> | undefined;
     setState({ status: 'loading' });
 
     const build = () => {
@@ -88,10 +88,10 @@ export function useBoard(
       }
     };
 
-    // One frame to paint the loading state, one to let it settle.
-    pending = requestAnimationFrame(() => {
-      pending = requestAnimationFrame(build);
-    });
+    // A short timer rather than requestAnimationFrame: the delay lets the
+    // loading state paint, and a timer still fires when the app is hidden,
+    // where rAF is suspended and the board would otherwise never build.
+    pending = setTimeout(build, 32);
 
     // Deliberately no disposal here. This cleanup also runs when a dependency
     // changes — a retry, a new level, Fast Refresh — and the state still
@@ -99,7 +99,7 @@ export function useBoard(
     // releases it once the replacement is in place; unmount is handled below.
     return () => {
       cancelled = true;
-      cancelAnimationFrame(pending);
+      clearTimeout(pending);
     };
   }, [levelId, attempt, colourBlindSafe, modifierOverride]);
 
