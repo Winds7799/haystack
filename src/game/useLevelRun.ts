@@ -11,7 +11,6 @@ import {
   strawFeedback,
   winFeedback,
 } from './feedback';
-import { showRewardedAd } from '@/ads/rewarded';
 import { hintHalo, hitTest, unrotate } from './hit';
 import { starsFor } from './scoring';
 import type { Drift } from './useDrift';
@@ -37,7 +36,6 @@ export interface LevelRun {
   onTap: (point: Point) => void;
   onHint: () => void;
   /** True while an ad is being fetched or shown. */
-  buyingHint: boolean;
   hint: Halo | null;
   finish: Finish | null;
   celebrating: boolean;
@@ -155,16 +153,13 @@ export function useLevelRun(
     [world, config, needles.length, levelId, later, say, drift]
   );
 
-  const [buyingHint, setBuyingHint] = useState(false);
-
   /**
-   * A hint is paid for with an ad, then with ten seconds, then with the third
-   * star. The clock keeps running while the ad plays — a hint should cost
-   * something even when it is free to buy.
+   * A hint costs ten seconds and the third star, and there are three a level.
+   * The cap is what keeps it from being a way to sweep a board.
    */
-  const onHint = useCallback(async () => {
+  const onHint = useCallback(() => {
     const state = useRun.getState();
-    if (!world || state.status !== 'playing' || buyingHint) {
+    if (!world || state.status !== 'playing') {
       return;
     }
     if (state.hints >= MAX_HINTS) {
@@ -177,24 +172,10 @@ export function useLevelRun(
       return;
     }
 
-    setBuyingHint(true);
-    const outcome = await showRewardedAd();
-    setBuyingHint(false);
-
-    // Only walking out of the ad forfeits the hint. No ad to show is the
-    // game's problem, not the player's.
-    if (outcome === 'dismissed') {
-      say('no hint — you left the ad early');
-      return;
-    }
-    if (useRun.getState().status !== 'playing') {
-      return;
-    }
-
-    useRun.getState().takeHint();
+    state.takeHint();
     setHint(hintHalo(world, pending));
     later(() => setHint(null), HINT_DURATION);
-  }, [world, needles, later, say, buyingHint]);
+  }, [world, needles, later, say]);
 
-  return { onTap, onHint, buyingHint, hint, finish, celebrating, target, toast };
+  return { onTap, onHint, hint, finish, celebrating, target, toast };
 }

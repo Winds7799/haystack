@@ -41,7 +41,7 @@ const PRIVACY: Document = {
     {
       heading: 'The short version',
       body: [
-        'Windies has no accounts and asks for no sign in. Your progress lives on your device. Two things can leave it: a leaderboard entry, if you choose to post one, and the data Google needs to show you an ad, if you choose to watch one.',
+        'Windies has no accounts and asks for no sign in. Your progress lives on your device. One thing can leave it: a leaderboard entry, if you choose to post one.',
       ],
     },
     {
@@ -56,14 +56,6 @@ const PRIVACY: Document = {
         'If you post a time, this is sent to our database: the name you typed, the level, your time, your stars, whether you used a hint, and a random identifier generated on your device the first time you opened the app.',
         'That identifier is not your device ID, your advertising ID, or anything issued by Apple or Google. It is a random number that exists so your own entry can be updated rather than duplicated. It is never shown to other players and never sent to anyone else.',
         'We do not collect your email address, your location, your contacts, or anything that identifies you personally. The name you type is the only thing other people see, so do not use one you would rather keep private.',
-      ],
-    },
-    {
-      heading: 'Advertising',
-      body: [
-        'Hints are paid for by watching an ad, supplied by Google AdMob. If you never ask for a hint, no ad is ever requested and no consent form is ever shown.',
-        'When an ad is requested, Google may collect device and usage information to select and measure it. What Google does with that is covered by its own policy at policies.google.com/technologies/partner-sites.',
-        'In the EU and UK you are asked for consent before the first ad, and you can change your answer at any time under Settings, Ad privacy choices.',
       ],
     },
     {
@@ -102,10 +94,9 @@ const TERMS: Document = {
       ],
     },
     {
-      heading: 'Hints and advertising',
+      heading: 'Hints',
       body: [
-        'Hints are given in exchange for watching an ad. Nothing in the game is bought with money and there are no purchases of any kind.',
-        'If no ad can be shown, the hint is given anyway. Leaving an ad before it finishes forfeits that hint.',
+        'Hints cost time on the clock and cap a level at two stars. There are three a level. Nothing in the game is bought with money, there are no advertisements, and there are no purchases of any kind.',
       ],
     },
     {

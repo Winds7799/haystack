@@ -212,7 +212,6 @@ export default function PlayScreen() {
               world={config.world.name}
               misses={misses}
               running={status === 'playing'}
-              buyingHint={run.buyingHint}
               hintsUsed={hintsUsed}
               leftHanded={settings.leftHanded}
               onHint={run.onHint}

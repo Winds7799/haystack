@@ -170,56 +170,6 @@ The schema trims names, caps them at 24 characters and rejects control
 characters, which is hygiene, not moderation. Either add a report path and a
 blocklist, or switch to generated handles, before submitting.
 
-## Hints and ads
-
-A hint dims the board and lights a quarter of it for a second and a half. It
-costs ten seconds, and taking any hint at all caps the level at two stars.
-Hints are not limited to one per level — each one costs another ad.
-
-### Going live, iOS first
-
-Ads are configured per platform, so iOS can earn while Android is still on
-test units. Until a platform has a real unit, it serves Google's samples and
-earns nothing — `usingTestAds()` reports this, and Settings shows a "test ads"
-note so it cannot ship unnoticed.
-
-In [AdMob](https://admob.google.com), create the app and a **rewarded** ad
-unit, then fill in two places:
-
-```jsonc
-// app.json
-"react-native-google-mobile-ads": {
-  "iosAppId": "ca-app-pub-XXXX~XXXX"      // the app
-},
-"extra": {
-  "ads": { "iosRewardedUnitId": "ca-app-pub-XXXX/XXXX" }   // the unit
-}
-```
-
-The app ID is native and needs a rebuild. The unit ID is read at runtime.
-Android gets the same two fields when you are ready for it.
-
-**Consent.** `AdsConsent.gatherConsent()` runs once, lazily, before the first
-ad — a player who never asks for a hint never sees a consent form. Serving
-personalised ads in the EU or UK without this breaches Google's policy and
-they will stop filling. Settings carries an "Ad privacy choices" entry, which
-the same rules require.
-
-**Tracking.** There is deliberately no App Tracking Transparency prompt, so
-first launch still asks for nothing. That means non-personalised ads on iOS,
-which earn less. To change it, set `userTrackingUsageDescription` in the
-plugin config and request ATT before the first ad.
-
-**Before submitting:** ads mean the App Store privacy questionnaire has to
-declare identifiers and usage data. That is a form, not code, but the app will
-be rejected without it.
-
-The ad module is loaded lazily inside a try/catch. On a build made before this
-dependency existed, or with no network, `adsAvailable()` is false and a hint is
-simply granted. Nobody loses a hint to an outage.
-
-**This requires a new native build.** `npx expo start` alone will not pick up
-the ad SDK.
 
 ## Legal
 
@@ -295,9 +245,7 @@ setting:
   `locateFile`.
 - `src/state/storage.web.ts` — localStorage instead of MMKV, which is native
   only. Falls back to memory in private windows rather than failing.
-- `src/ads/rewarded.web.ts` — a no-ad shim. Metro follows `require` statically
-  even inside a try/catch, so without this the native ad SDK is pulled into the
-  web bundle and the build fails on react-native internals.
+
 
 Nothing renders until the wasm has loaded, so `_layout` holds the tree back
 until `useSkiaReady` resolves.
@@ -309,6 +257,5 @@ lands in about two seconds including generation and CanvasKit warm-up.
 
 ### What the web build does not have
 
-Hints are free, because there are no rewarded ads in a browser. Haptics do
 nothing. Everything else — all thirty levels, the modifiers, the leaderboard,
 progress — behaves the same.
