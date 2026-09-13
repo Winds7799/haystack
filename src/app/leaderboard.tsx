@@ -32,8 +32,9 @@ export default function LeaderboardScreen() {
   );
   const [board, setBoard] = useState<Board>({ status: 'loading' });
   const [mine, setMine] = useState<Score | null>(null);
-  const [reported, setReported] = useState<string | null>(null);
   const playerId = useIdentity((state) => state.playerId);
+  const blocked = useIdentity((state) => state.blocked);
+  const block = useIdentity((state) => state.block);
 
   const load = useCallback(
     (target: number) => {
@@ -128,21 +129,33 @@ export default function LeaderboardScreen() {
       ) : null}
       {board.status === 'ready' && board.rows.length > 0 ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {board.rows.map((row) => (
-            <Row
-              key={`${row.rank}-${row.name}`}
-              standing={row}
-              mine={mine !== null && row.name === mine.name && row.seconds === mine.seconds}
-              reported={reported === row.name}
-              onReport={() => {
-                tapFeedback();
-                setReported(row.name);
-                void reportName(row.name, level, 'reported from the leaderboard').catch(
-                  () => undefined
-                );
-              }}
-            />
-          ))}
+          {board.rows
+            .filter((row) => !blocked.includes(row.name))
+            .map((row) => (
+              <Row
+                key={`${row.rank}-${row.name}`}
+                standing={row}
+                mine={mine !== null && row.name === mine.name && row.seconds === mine.seconds}
+                onHide={() => {
+                  tapFeedback();
+                  block(row.name);
+                }}
+                onReport={() => {
+                  tapFeedback();
+                  // Reporting hides the name too: nobody who reports something
+                  // wants to keep looking at it while the report is read.
+                  block(row.name);
+                  void reportName(row.name, level, 'reported from the leaderboard').catch(
+                    () => undefined
+                  );
+                }}
+              />
+            ))}
+          {blocked.length > 0 ? (
+            <Text style={styles.hiddenNote}>
+              {`${blocked.length} hidden ${blocked.length === 1 ? 'name' : 'names'} · unhide in Settings`}
+            </Text>
+          ) : null}
         </ScrollView>
       ) : null}
     </Screen>
@@ -152,12 +165,12 @@ export default function LeaderboardScreen() {
 function Row({
   standing,
   mine,
-  reported,
+  onHide,
   onReport,
 }: {
   standing: Standing;
   mine: boolean;
-  reported: boolean;
+  onHide: () => void;
   onReport: () => void;
 }) {
   return (
@@ -173,15 +186,24 @@ function Row({
       {standing.hintUsed ? <Text style={styles.hint}>hint</Text> : null}
       <Text style={styles.time}>{formatTime(standing.seconds * 1000)}</Text>
       {mine ? null : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={reported ? `${standing.name} reported` : `Report the name ${standing.name}`}
-          disabled={reported}
-          onPress={onReport}
-          hitSlop={space.sm}
-        >
-          <Text style={styles.report}>{reported ? 'reported' : 'report'}</Text>
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Hide ${standing.name} from every board on this device`}
+            onPress={onHide}
+            hitSlop={space.sm}
+          >
+            <Text style={styles.report}>hide</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Report and hide the name ${standing.name}`}
+            onPress={onReport}
+            hitSlop={space.sm}
+          >
+            <Text style={styles.report}>report</Text>
+          </Pressable>
+        </View>
       )}
     </View>
   );
@@ -231,5 +253,13 @@ const styles = StyleSheet.create({
   name: { flex: 1, color: color.text, fontFamily: font.body, fontSize: type.body },
   hint: { color: color.goldDim, fontFamily: font.body, fontSize: type.caption },
   time: { color: color.gold, fontFamily: font.monoMedium, fontSize: type.body },
+  actions: { flexDirection: 'row', gap: space.md },
   report: { color: color.textMuted, fontFamily: font.body, fontSize: type.caption },
+  hiddenNote: {
+    color: color.textMuted,
+    fontFamily: font.body,
+    fontSize: type.caption,
+    textAlign: 'center',
+    paddingVertical: space.lg,
+  },
 });

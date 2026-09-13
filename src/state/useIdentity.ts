@@ -16,6 +16,14 @@ interface IdentityState {
   playerId: string;
   name: string;
   setName: (name: string) => void;
+  /**
+   * Names this player never wants to see again. Names are the only handle
+   * the client ever gets — player ids stay on the server — so a block is by
+   * name, lives on this device, and can be undone from Settings.
+   */
+  blocked: string[];
+  block: (name: string) => void;
+  unblockAll: () => void;
 }
 
 function newPlayerId(): string {
@@ -43,6 +51,10 @@ export const useIdentity = create<IdentityState>()(
       playerId: newPlayerId(),
       name: '',
       setName: (name) => set({ name: tidyName(name) }),
+      blocked: [],
+      block: (name) =>
+        set((state) => (state.blocked.includes(name) ? state : { blocked: [...state.blocked, name] })),
+      unblockAll: () => set({ blocked: [] }),
     }),
     {
       name: 'identity',

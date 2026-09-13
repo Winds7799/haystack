@@ -95,7 +95,7 @@ const TERMS: Document = {
       heading: 'Names on the leaderboard',
       body: [
         'There is no tolerance for objectionable names. Anything abusive, hateful, sexual, threatening, impersonating another person, or otherwise offensive is not allowed on the board.',
-        'Every entry carries a report control. Reported names are reviewed and removed within 24 hours, and the device that posted one may be blocked from posting again.',
+        'Every entry carries a hide control and a report control. Hiding a name removes it from every board on your device until you unhide it in Settings. Reported names are hidden at once, reviewed and removed within 24 hours, and the device that posted one may be blocked from posting again.',
         'By posting a name you accept these terms and confirm the name is yours to use.',
       ],
     },

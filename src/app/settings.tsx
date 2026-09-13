@@ -24,6 +24,8 @@ export default function SettingsScreen() {
   const [restoreNote, setRestoreNote] = useState<string | null>(null);
   const unlimitedHints = useProgress((state) => state.unlimitedHints);
   const name = useIdentity((state) => state.name);
+  const blocked = useIdentity((state) => state.blocked);
+  const unblockAll = useIdentity((state) => state.unblockAll);
 
   const onReset = useCallback(() => {
     reset();
@@ -87,6 +89,18 @@ export default function SettingsScreen() {
                 .catch(() => undefined)
                 .finally(() => setErasing(false));
             }}
+            style={styles.wide}
+          />
+          <Button
+            label="Unhide leaderboard names"
+            note={blocked.length === 0 ? 'none hidden' : `${blocked.length} hidden`}
+            disabled={blocked.length === 0}
+            accessibilityLabel={
+              blocked.length === 0
+                ? 'No leaderboard names are hidden'
+                : `Show the ${blocked.length} hidden leaderboard ${blocked.length === 1 ? 'name' : 'names'} again`
+            }
+            onPress={unblockAll}
             style={styles.wide}
           />
         </View>
