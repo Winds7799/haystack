@@ -6,7 +6,8 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { startAmbience, stopAmbience } from '@/audio';
 import { Board } from '@/game/Board';
 import { MAX_ZOOM } from '@/game/constants';
-import { FIRST_LEVEL, findLevel, type Modifier } from '@/game/difficulty';
+import { FIRST_LEVEL, LAST_LEVEL, findLevel, type Modifier } from '@/game/difficulty';
+import { summarise } from '@/game/finale';
 import { hintPenaltyFor } from '@/game/scoring';
 import { panFeedback } from '@/game/feedback';
 import { findNeedles, rotateAbout } from '@/game/hit';
@@ -19,6 +20,7 @@ import type { ObjectKind } from '@/game/types';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import { useRun } from '@/state/useRun';
 import { claimHeldScore, dropHeldScore, onPending } from '@/net/post';
+import { Finale } from '@/ui/components/Finale';
 import { HintOffer } from '@/ui/components/HintOffer';
 import { Hud } from '@/ui/components/Hud';
 import { Message } from '@/ui/components/Message';
@@ -68,6 +70,9 @@ export default function PlayScreen() {
   const misses = useRun((state) => state.misses);
   const hintsUsed = useRun((state) => state.hints);
   const unlimitedHints = useProgress((state) => state.unlimitedHints);
+  const records = useProgress((state) => state.records);
+  // The hundredth needle opens the results monitor before the usual card.
+  const [finaleShown, setFinaleShown] = useState(false);
   const [offering, setOffering] = useState(false);
   const lastMiss = useRun((state) => state.lastMiss);
   const found = useRun((state) => state.found);
@@ -130,6 +135,11 @@ export default function PlayScreen() {
 
   const drift = useDrift(config?.modifier === 'drift', reducedMotion, status !== 'playing');
   const run = useLevelRun(config, world, needles, drift, levelId, attempt);
+  useEffect(() => {
+    if (run.finish === null) {
+      setFinaleShown(false);
+    }
+  }, [run.finish]);
 
   const camera = useCamera(
     viewport,
@@ -235,7 +245,13 @@ export default function PlayScreen() {
               onQuit={onQuit}
             />
           ) : null}
-          {run.finish ? (
+          {run.finish && levelId === LAST_LEVEL && !finaleShown ? (
+            <Finale
+              summary={summarise(records)}
+              reducedMotion={reducedMotion}
+              onDismiss={() => setFinaleShown(true)}
+            />
+          ) : run.finish ? (
             <Results
               levelId={levelId}
               milliseconds={run.finish.milliseconds}

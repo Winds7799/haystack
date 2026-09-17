@@ -55,6 +55,27 @@ export const veil = {
 
 export type BoardPaletteName = keyof typeof boardPalette;
 
+/**
+ * The results monitor after the hundredth level: an old office CRT. It is the
+ * one screen in the game that is not straw and ink, and nothing else may
+ * borrow from it.
+ */
+export const monitor = {
+  screenBright: '#2F6E7C',
+  screen: '#123E4A',
+  screenDeep: '#061C23',
+  /** The phosphor bloom, and every glow on the tube. */
+  glow: '#63D2E6',
+  /** Rules, ticks and ghosted panels. */
+  line: '#B9E2EA',
+  text: '#EEF6F7',
+  label: '#BFD7DC',
+  /** The plus on an S+ rank. */
+  plus: '#E9A85B',
+  bezel: '#1E2224',
+  bezelEdge: '#3A4043',
+} as const;
+
 /** Straw colour range, as hue degrees and 0..1 saturation / lightness. */
 export const strawHsl = {
   hue: [33, 48],
@@ -97,6 +118,10 @@ export const font = {
   /** Anything numeric, so digits never jitter as they change. */
   mono: 'IBMPlexMono_400Regular',
   monoMedium: 'IBMPlexMono_500Medium',
+  /** A condensed grotesque, used by the results monitor and nothing else. */
+  monitor: 'RobotoCondensed_400Regular',
+  monitorMedium: 'RobotoCondensed_500Medium',
+  monitorBold: 'RobotoCondensed_700Bold',
 } as const;
 
 export const layout = {

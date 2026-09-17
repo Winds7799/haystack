@@ -51,6 +51,7 @@ export default function LandingScreen() {
   const target = nextLevel(records);
   const { stars, done } = totals(records);
   const started = done > 0 || recordFor(records, FIRST_LEVEL).attempts > 0;
+  const finished = done === LEVELS.length;
 
   const rise = useSharedValue(reducedMotion ? 1 : 0);
   useEffect(() => {
@@ -68,8 +69,12 @@ export default function LandingScreen() {
   const actionsStyle = useAnimatedStyle(() => ({ opacity: rise.value }));
 
   const onPlay = useCallback(() => {
+    if (finished) {
+      router.push('/finale');
+      return;
+    }
     router.push(seenTutorial ? `/play/${target}` : '/how-to-play');
-  }, [seenTutorial, target]);
+  }, [finished, seenTutorial, target]);
 
   return (
     <View style={styles.root}>
@@ -103,10 +108,16 @@ export default function LandingScreen() {
           )}
 
           <Button
-            label={started ? 'Continue' : 'Start'}
-            note={started ? `Level ${target}` : undefined}
+            label={finished ? 'Results' : started ? 'Continue' : 'Start'}
+            note={finished ? 'All hundred found' : started ? `Level ${target}` : undefined}
             tone="primary"
-            accessibilityLabel={started ? `Continue at level ${target}` : 'Start level one'}
+            accessibilityLabel={
+              finished
+                ? 'Open your results for all hundred levels'
+                : started
+                  ? `Continue at level ${target}`
+                  : 'Start level one'
+            }
             onPress={onPlay}
             style={styles.wide}
           />
