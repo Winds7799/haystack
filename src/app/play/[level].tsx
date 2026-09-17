@@ -21,6 +21,7 @@ import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import { useRun } from '@/state/useRun';
 import { claimHeldScore, dropHeldScore, onPending } from '@/net/post';
 import { Finale } from '@/ui/components/Finale';
+import { Follow } from '@/ui/components/Follow';
 import { HintOffer } from '@/ui/components/HintOffer';
 import { Hud } from '@/ui/components/Hud';
 import { Message } from '@/ui/components/Message';
@@ -71,8 +72,9 @@ export default function PlayScreen() {
   const hintsUsed = useRun((state) => state.hints);
   const unlimitedHints = useProgress((state) => state.unlimitedHints);
   const records = useProgress((state) => state.records);
-  // The hundredth needle opens the results monitor before the usual card.
-  const [finaleShown, setFinaleShown] = useState(false);
+  // The hundredth needle opens the results monitor, then the one ask to
+  // follow the maker, before the usual card.
+  const [finale, setFinale] = useState<'monitor' | 'follow' | 'done'>('monitor');
   const [offering, setOffering] = useState(false);
   const lastMiss = useRun((state) => state.lastMiss);
   const found = useRun((state) => state.found);
@@ -137,7 +139,7 @@ export default function PlayScreen() {
   const run = useLevelRun(config, world, needles, drift, levelId, attempt);
   useEffect(() => {
     if (run.finish === null) {
-      setFinaleShown(false);
+      setFinale('monitor');
     }
   }, [run.finish]);
 
@@ -245,12 +247,14 @@ export default function PlayScreen() {
               onQuit={onQuit}
             />
           ) : null}
-          {run.finish && levelId === LAST_LEVEL && !finaleShown ? (
+          {run.finish && levelId === LAST_LEVEL && finale === 'monitor' ? (
             <Finale
               summary={summarise(records)}
               reducedMotion={reducedMotion}
-              onDismiss={() => setFinaleShown(true)}
+              onDismiss={() => setFinale('follow')}
             />
+          ) : run.finish && levelId === LAST_LEVEL && finale === 'follow' ? (
+            <Follow reducedMotion={reducedMotion} onClose={() => setFinale('done')} />
           ) : run.finish ? (
             <Results
               levelId={levelId}
