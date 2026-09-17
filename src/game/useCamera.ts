@@ -53,11 +53,12 @@ export function useCamera(
   const zoom = useSharedValue(1);
   const offsetX = useSharedValue(0);
   const offsetY = useSharedValue(0);
-  const startZoom = useSharedValue(1);
-  const startX = useSharedValue(0);
-  const startY = useSharedValue(0);
-  const anchorX = useSharedValue(0);
-  const anchorY = useSharedValue(0);
+  // Where each gesture last was, so every event applies only what changed
+  // since the one before. Pan and pinch both move the same offset, and with
+  // deltas they add up instead of fighting over whose baseline is right.
+  const lastX = useSharedValue(0);
+  const lastY = useSharedValue(0);
+  const lastScale = useSharedValue(1);
   const touchX = useSharedValue(0);
   const touchY = useSharedValue(0);
 
@@ -97,23 +98,24 @@ export function useCamera(
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
       .enabled(interactive)
-      .onStart(() => {
+      .onStart((event) => {
         cancelAnimation(offsetX);
         cancelAnimation(offsetY);
-        startX.value = offsetX.value;
-        startY.value = offsetY.value;
+        // The board follows from here. The distance the finger crossed to
+        // count as a pan at all is not replayed as a jump on the first frame.
+        lastX.value = event.translationX;
+        lastY.value = event.translationY;
         runOnJS(handlePanStart)();
       })
       .onUpdate((event) => {
         touchX.value = event.x;
         touchY.value = event.y;
-        offsetX.value = clampOffset(startX.value + event.translationX, zoom.value, width, worldWidth);
-        offsetY.value = clampOffset(
-          startY.value + event.translationY,
-          zoom.value,
-          height,
-          worldHeight
-        );
+        const dx = event.translationX - lastX.value;
+        const dy = event.translationY - lastY.value;
+        lastX.value = event.translationX;
+        lastY.value = event.translationY;
+        offsetX.value = clampOffset(offsetX.value + dx, zoom.value, width, worldWidth);
+        offsetY.value = clampOffset(offsetY.value + dy, zoom.value, height, worldHeight);
       })
       .onEnd((event) => {
         const horizontal = offsetBounds(zoom.value, width, worldWidth);
@@ -137,30 +139,27 @@ export function useCamera(
       .onStart((event) => {
         cancelAnimation(offsetX);
         cancelAnimation(offsetY);
-        startZoom.value = zoom.value;
-        startX.value = offsetX.value;
-        startY.value = offsetY.value;
-        anchorX.value = event.focalX;
-        anchorY.value = event.focalY;
+        lastScale.value = event.scale;
       })
       .onUpdate((event) => {
         touchX.value = event.focalX;
         touchY.value = event.focalY;
-        const next = clampZoom(startZoom.value * event.scale, minZoom, MAX_ZOOM);
-        const growth = next / startZoom.value;
-        // Hold the world point under the fingers still, then let the fingers
-        // drag the board as they travel.
-        const pinnedX = anchorX.value - (anchorX.value - startX.value) * growth;
-        const pinnedY = anchorY.value - (anchorY.value - startY.value) * growth;
+        const change = lastScale.value > 0 ? event.scale / lastScale.value : 1;
+        lastScale.value = event.scale;
+        const next = clampZoom(zoom.value * change, minZoom, MAX_ZOOM);
+        const growth = next / zoom.value;
+        // Only the scale is applied here, about the point under the fingers.
+        // Their travel across the screen is the pan's, which tracks the same
+        // two fingers, so the board neither jumps nor lags between the two.
         zoom.value = next;
         offsetX.value = clampOffset(
-          pinnedX + (event.focalX - anchorX.value),
+          event.focalX - (event.focalX - offsetX.value) * growth,
           next,
           width,
           worldWidth
         );
         offsetY.value = clampOffset(
-          pinnedY + (event.focalY - anchorY.value),
+          event.focalY - (event.focalY - offsetY.value) * growth,
           next,
           height,
           worldHeight
@@ -196,11 +195,9 @@ export function useCamera(
     zoom,
     offsetX,
     offsetY,
-    startZoom,
-    startX,
-    startY,
-    anchorX,
-    anchorY,
+    lastX,
+    lastY,
+    lastScale,
     touchX,
     touchY,
   ]);
