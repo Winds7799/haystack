@@ -21,7 +21,7 @@ import type { Purchase } from 'expo-iap';
  * account owns.
  */
 
-/** Must match App Store Connect exactly. It can never be changed there. */
+/** Must match App Store Connect and Google Play exactly; neither lets it change. */
 export const UNLIMITED_HINTS = 'com.dahbed55.haystack.unlimited_hints';
 
 export interface Offer {
@@ -84,7 +84,11 @@ export async function fetchOffer(): Promise<Offer | null> {
  * itself arrives through the listener above, not this return value.
  */
 export async function buy(): Promise<void> {
-  await requestPurchase({ request: { apple: { sku: UNLIMITED_HINTS } }, type: 'in-app' });
+  // Both stores are named: expo-iap reads the one for the platform it runs on.
+  await requestPurchase({
+    request: { apple: { sku: UNLIMITED_HINTS }, google: { skus: [UNLIMITED_HINTS] } },
+    type: 'in-app',
+  });
 }
 
 /** True if this Apple ID already owns the product. */
