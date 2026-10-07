@@ -3,7 +3,11 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond';
+import {
+  EBGaramond_400Regular,
+  EBGaramond_500Medium,
+  EBGaramond_500Medium_Italic,
+} from '@expo-google-fonts/eb-garamond';
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono';
 // Single weights, so an update carries three files rather than the family.
 import { RobotoCondensed_400Regular } from '@expo-google-fonts/roboto-condensed/400Regular';
@@ -23,6 +27,7 @@ export default function RootLayout() {
   const [fontsReady] = useFonts({
     EBGaramond_400Regular,
     EBGaramond_500Medium,
+    EBGaramond_500Medium_Italic,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     RobotoCondensed_400Regular,
