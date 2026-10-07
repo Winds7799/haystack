@@ -17,6 +17,7 @@ import { useDrift } from '@/game/useDrift';
 import { useLevelRun } from '@/game/useLevelRun';
 import type { Viewport } from '@/game/camera';
 import type { ObjectKind } from '@/game/types';
+import { reviewDue, useReviewPrompt } from '@/state/reviewPrompt';
 import { isUnlocked, recordFor, useProgress } from '@/state/useProgress';
 import { useRun } from '@/state/useRun';
 import { claimHeldScore, dropHeldScore, onPending } from '@/net/post';
@@ -27,6 +28,7 @@ import { Hud } from '@/ui/components/Hud';
 import { Message } from '@/ui/components/Message';
 import { PauseSheet } from '@/ui/components/PauseSheet';
 import { Results } from '@/ui/components/Results';
+import { ReviewPrompt } from '@/ui/components/ReviewPrompt';
 import { NamePrompt } from '@/ui/components/NamePrompt';
 import { NewObjects } from '@/ui/components/NewObjects';
 import { Toast } from '@/ui/components/Toast';
@@ -39,6 +41,8 @@ function readModifier(value: string | undefined): Modifier | 'none' | undefined 
 }
 
 const KEEP_AWAKE = 'haystack-level';
+/** How long the results stand before a rating is asked for: long enough for the stars to land. */
+const REVIEW_DELAY = 1200;
 
 export default function PlayScreen() {
   // Screens must not sleep mid-level. There is no such thing in a browser tab,
@@ -76,6 +80,7 @@ export default function PlayScreen() {
   // follow the maker, before the usual card.
   const [finale, setFinale] = useState<'monitor' | 'follow' | 'done'>('monitor');
   const [offering, setOffering] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const lastMiss = useRun((state) => state.lastMiss);
   const found = useRun((state) => state.found);
   const reducedMotion = settings.reducedMotion || useReducedMotion();
@@ -140,7 +145,37 @@ export default function PlayScreen() {
   useEffect(() => {
     if (run.finish === null) {
       setFinale('monitor');
+      setReviewing(false);
     }
+  }, [run.finish]);
+
+  // Decided once, as the results open. A first clear counts towards the next
+  // ask; the ask itself never stacks on another one — the hundredth level has
+  // its own, and so does a first time good enough to post — and there is no
+  // store to send anyone to from a browser.
+  useEffect(() => {
+    if (run.finish === null) {
+      return;
+    }
+    if (!Number.isFinite(run.finish.previousBest)) {
+      useReviewPrompt.getState().countClear();
+    }
+    const cleared = summarise(useProgress.getState().records).levelsDone;
+    if (
+      Platform.OS === 'web' ||
+      levelId === LAST_LEVEL ||
+      needsName ||
+      offering ||
+      !reviewDue(cleared)
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      useReviewPrompt.getState().markShown();
+      setReviewing(true);
+    }, REVIEW_DELAY);
+    return () => clearTimeout(timer);
+    // Only a new finish decides: a name prompt closing must not ask again.
   }, [run.finish]);
 
   const camera = useCamera(
@@ -269,6 +304,9 @@ export default function PlayScreen() {
               onNext={onNext}
               onLevels={onLevels}
             />
+          ) : null}
+          {run.finish && reviewing ? (
+            <ReviewPrompt reducedMotion={reducedMotion} onClose={() => setReviewing(false)} />
           ) : null}
           {introducing ? (
             <NewObjects
