@@ -43,9 +43,12 @@ const STORE =
         web: 'https://play.google.com/store/apps/details?id=com.dahbed55.haystack',
       };
 
-/** Each sentence starts a line of its own, and "this needle" is never split. */
+/**
+ * Each sentence starts a line of its own. Neither ends on a word alone: on a
+ * narrow phone the first sentence can wrap too.
+ */
 const DETAIL =
-  `${STORE.name} is one very big haystack.\n` +
+  `${STORE.name} is one very big\u00A0haystack.\n` +
   'A rating helps the next player find this\u00A0needle.';
 
 async function openStore(): Promise<boolean> {
