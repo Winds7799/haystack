@@ -151,8 +151,8 @@ export default function PlayScreen() {
 
   // Decided once, as the results open. A first clear counts towards the next
   // ask; the ask itself never stacks on another one — the hundredth level has
-  // its own, and so does a first time good enough to post — and there is no
-  // store to send anyone to from a browser.
+  // its own, and so does a time held until the player names themselves for
+  // the board — and there is no store to send anyone to from a browser.
   useEffect(() => {
     if (run.finish === null) {
       return;
