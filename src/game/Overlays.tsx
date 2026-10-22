@@ -12,7 +12,8 @@ const FLARE = rgbaFromHex(color.warning, 0.75);
 const LIGHT = rgbaFromHex(color.steel, 0.85);
 const HAZE = rgbaFromHex(veil.haze, 0.2);
 const OPEN = rgbaFromHex(veil.night, 0);
-const NIGHT = rgbaFromHex(veil.night, 0.94);
+// Not quite black: the shape of the pile still shows outside the lantern.
+const NIGHT = rgbaFromHex(veil.night, 0.86);
 const MARK = rgbaFromHex(color.gold, 0.9);
 
 interface SpotlightProps {
