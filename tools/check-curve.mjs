@@ -38,7 +38,8 @@ for (const level of LEVELS) {
     worstOcclusion = Math.max(worstOcclusion, needle.occlusion);
     if (hitTest(world, { x: needle.x, y: needle.y })?.kind !== 'needle') broken++;
     const halo = hintHalo(world, needle);
-    if (Math.hypot(halo.centre.x - needle.x, halo.centre.y - needle.y) > halo.radius) hintMiss++;
+    // Inside the halo's fully lit middle (the Spotlight is clear to 0.55 of its radius).
+    if (Math.hypot(halo.centre.x - needle.x, halo.centre.y - needle.y) > halo.radius * 0.55) hintMiss++;
   }
 }
 
