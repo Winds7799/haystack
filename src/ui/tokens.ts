@@ -112,6 +112,8 @@ export const type = {
 export const font = {
   /** An old-style serif, for the wordmark and every heading. */
   display: 'EBGaramond_500Medium',
+  /** The same face, leaning. A signature, never a sentence. */
+  displayItalic: 'EBGaramond_500Medium_Italic',
   displayPlain: 'EBGaramond_400Regular',
   /** Body copy stays on the system face: it scales and hyphenates best. */
   body: Platform.select({ ios: 'System', default: 'sans-serif' }),
