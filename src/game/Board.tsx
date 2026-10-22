@@ -23,8 +23,12 @@ const SAMPLING = { filter: FilterMode.Linear, mipmap: MipmapMode.Linear } as con
 
 /** How much of the board the win spotlight leaves lit, in world units. */
 const WIN_HALO = 210;
-/** The lantern's reach, as a fraction of the shorter side of the screen. */
-const LANTERN_REACH = 0.34;
+/**
+ * The lantern's reach, as a fraction of the shorter side of the screen. Was
+ * 0.34: the first lantern level read as a black screen ("the needle is
+ * nowhere to be seen").
+ */
+const LANTERN_REACH = 0.42;
 /** Ring drawn around a needle already found on a twin level. */
 const FOUND_RING = 30;
 
@@ -106,8 +110,9 @@ export function Board({
   const centre = vec(world.width / 2, world.height / 2);
   // Drawn from the bleed's corner, so a drifting board never turns a gap into view.
   const outer = outerOf(world);
-  // The lantern goes out for the win moment, or the payoff happens in the dark.
-  const lanternOn = modifier === 'lantern' && !celebrating;
+  // The lantern goes out for the win moment, or the payoff happens in the dark,
+  // and while a hint shows: under it the hint's halo could not be seen.
+  const lanternOn = modifier === 'lantern' && !celebrating && !hint;
 
   return (
     <GestureDetector gesture={camera.gesture}>

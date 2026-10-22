@@ -64,15 +64,18 @@ export function unrotate(point: Point, angle: number, world: World): Point {
  * needle but never centred on it — the point is to narrow the search, not to
  * answer it. The offset is drawn from the board seed so the same board always
  * gives the same halo.
+ *
+ * It was a quarter of the board, with the needle anywhere in its middle half:
+ * zoomed in, the halo was wider than the screen and showed nothing, and
+ * players read that as a wrong hint. The needle now sits inside the clear
+ * middle of the circle (the Spotlight is fully clear to 0.55 of the radius).
  */
-const HINT_SHARE = 0.25;
-const HINT_DRIFT = 0.5;
+const HINT_SHARE = 0.11;
+const HINT_DRIFT = 0.45;
 
 export function hintHalo(world: World, needle: BoardObject): { centre: Point; radius: number } {
-  // Measured off the short side, so the halo is the same share of the board
-  // however the board is shaped.
-  // Sized by area rather than by a side, so a quarter is a quarter whatever
-  // shape the board is.
+  // Sized by area rather than by a side, so the halo is the same share of
+  // the board whatever shape the board is.
   const radius = Math.sqrt((world.width * world.height * HINT_SHARE) / Math.PI);
   const rng = mulberry32(world.seed ^ 0x48494e54);
   const angle = rng() * Math.PI * 2;

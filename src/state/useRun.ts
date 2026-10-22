@@ -22,7 +22,8 @@ export const HINT_COST_OF_PAR = 0.25;
  */
 export const FREE_HINTS = 1;
 /** How long the hint halo stays on the board. */
-export const HINT_DURATION = 1500;
+/** How long a hint's halo stays lit. 1.5 s was gone before a player could look. */
+export const HINT_DURATION = 6000;
 
 export interface Miss {
   /** null when the tap landed on nothing but straw. */

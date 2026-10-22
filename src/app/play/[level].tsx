@@ -187,6 +187,17 @@ export default function PlayScreen() {
   );
   const { focusOn } = camera;
 
+  // A hint frames its halo, the whole circle across the short side of the
+  // screen. Zoomed in elsewhere, a halo off the screen only dimmed what the
+  // player was looking at, and read as a wrong hint.
+  useEffect(() => {
+    if (!run.hint || !world) {
+      return;
+    }
+    const fit = Math.min(viewport.width, viewport.height) / (2 * run.hint.radius);
+    focusOn(rotateAbout(run.hint.centre, drift.angle.value, world), fit, !reducedMotion);
+  }, [run.hint, world, viewport, focusOn, reducedMotion, drift]);
+
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setViewport((current) =>
